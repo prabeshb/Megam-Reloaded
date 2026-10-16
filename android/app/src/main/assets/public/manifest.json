@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Megan Weather",
+  "short_name": "Megan",
+  "description": "Fast, lightweight mobile-first weather application delivering quick forecasts with simultaneous metric and imperial temperatures.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0284c7",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
