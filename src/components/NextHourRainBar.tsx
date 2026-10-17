@@ -33,7 +33,12 @@ export const NextHourRainBar: React.FC<NextHourRainBarProps> = ({ rainData }) =>
   };
 
   return (
-    <div className="px-4 mb-4">
+    <div
+      data-no-page-swipe="true"
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      className="px-4 mb-4 select-none"
+    >
       <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 mb-2">

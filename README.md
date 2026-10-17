@@ -112,6 +112,7 @@ A fast, lightweight, mobile-first weather application delivering quick forecasts
 │   ├── App.tsx                     # Main application container
 │   ├── index.css                   # Global styles and font definitions
 │   └── main.tsx                    # React DOM entry point
+├── .npmrc                          # npm configuration (legacy-peer-deps for Vercel builds)
 ├── capacitor.config.ts             # Capacitor Android configuration
 ├── index.html                      # HTML entry with mobile viewport tags
 ├── package.json                    # Dependencies and build scripts
@@ -180,12 +181,12 @@ The application is pre-configured for zero-configuration, one-click deployment o
 1. Push your repository to **GitHub**, **GitLab**, or **Bitbucket**.
 2. Go to [vercel.com/new](https://vercel.com/new) and log in.
 3. Import your Megam Weather repository.
-4. Vercel automatically detects **Vite** as the framework:
+4. Vercel automatically detects the project settings:
    - **Framework Preset**: `Vite`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
-5. Click **Deploy**. Your app will be live with full HTTPS, edge caching, and global CDN delivery in seconds.
+   - **Install Command**: `npm install --legacy-peer-deps` *(pre-configured via `.npmrc` and `vercel.json`)*
+5. Click **Deploy**. Your app will build and go live with full HTTPS, edge caching, and global CDN delivery in seconds.
 
 ### Option B: Deploy via Vercel CLI
 If you prefer deploying directly from your terminal:
@@ -200,9 +201,16 @@ vercel
 vercel --prod
 ```
 
+### Dependency Resolution Fix (`--legacy-peer-deps`)
+Modern npm uses strict peer-dependency validation by default, which can cause an `ERESOLVE` conflict when packaging newer Vite and Tailwind versions alongside Capacitor. This project includes two automatic safeguards so you never see this error on Vercel:
+1. **`.npmrc`**: Contains `legacy-peer-deps=true` so all Vercel build runners resolve peer dependencies cleanly.
+2. **`vercel.json`**: Explicitly defines `"installCommand": "npm install --legacy-peer-deps"` to override default strict install behavior.
+3. If you manually configure the project in the Vercel Dashboard, ensure **Settings > General > Install Command** is set to `npm install --legacy-peer-deps` (or left to default, which reads `.npmrc`).
+
 ### Pre-Configured `vercel.json` Features
 The repository includes a root `vercel.json` file that handles:
-- **SPA Rewrites**: Redirects all inbound routes (`/(.*)`) to `/index.html` so client-side state and deep links load seamlessly without 404 errors.
+- **Install Command**: `npm install --legacy-peer-deps` for zero-friction builds.
+- **SPA Rewrites**: Redirects all inbound routes (`/(.*)`) to `/index.html` so client-side state, modal paths, and deep links load seamlessly without 404 errors.
 - **PWA Asset Headers**: Sets `Content-Type: application/manifest+json` on `/manifest.json` and configures immutable HTTP cache-control headers on `/icon.svg` for optimal Lighthouse PWA scores.
 - **Environment Variables**: If you use any optional server-side keys (like `GEMINI_API_KEY`), add them in your Vercel Project Settings under **Settings > Environment Variables**.
 

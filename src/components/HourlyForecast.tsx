@@ -20,7 +20,13 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({
   const activityLabel = activityPrefs?.activityType === 'walk' ? 'Walk' : activityPrefs?.activityType === 'bike' ? 'Ride' : 'Run';
 
   return (
-    <div className="px-4 mb-4">
+    <div
+      data-no-page-swipe="true"
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      className="px-4 mb-4 select-none"
+    >
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
           <Clock size={14} className="text-sky-500" />
@@ -34,7 +40,13 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({
         )}
       </div>
 
-      <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 snap-x snap-mandatory">
+      <div
+        data-no-page-swipe="true"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 snap-x snap-mandatory"
+      >
         {hourly.map((hour, idx) => {
           const primaryVal = isCelsiusPrimary ? `${hour.tempC}°C` : `${hour.tempF}°F`;
           const secondaryVal = isCelsiusPrimary ? `${hour.tempF}°F` : `${hour.tempC}°C`;

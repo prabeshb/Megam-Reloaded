@@ -96,16 +96,39 @@ export default function App() {
   const touchStartY = useRef<number>(0);
 
   const handlePagerTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest('[data-no-page-swipe]') ||
+      target?.closest('.overflow-x-auto') ||
+      target?.closest('button') ||
+      target?.closest('input')
+    ) {
+      touchStartX.current = -1;
+      return;
+    }
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
   };
 
   const handlePagerTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === -1) return;
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest('[data-no-page-swipe]') ||
+      target?.closest('.overflow-x-auto') ||
+      target?.closest('button') ||
+      target?.closest('input')
+    ) {
+      touchStartX.current = -1;
+      return;
+    }
+
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = -1;
 
-    // Only trigger horizontal swipe if horizontal movement is dominant
-    if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    // Only trigger horizontal swipe if horizontal movement is dominant and intentional
+    if (Math.abs(deltaX) > 70 && Math.abs(deltaX) > Math.abs(deltaY) * 2.0) {
       const totalPages = 1 + favorites.length;
       if (deltaX < 0 && activePageIndex < totalPages - 1) {
         // Swipe left -> Next location
