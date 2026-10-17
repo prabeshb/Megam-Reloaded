@@ -269,4 +269,71 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('H: 20°')).toBeInTheDocument();
     expect(screen.getByText('L: 11°')).toBeInTheDocument();
   });
+
+  it('converts Activity Window temperature thresholds between °C and °F and provides interactive wind/rain sliders in SettingsModal', () => {
+    const onUpdateSettings = vi.fn();
+    const baseSettings: AppSettings = {
+      theme: 'system',
+      primaryUnit: 'F',
+      severeAlertsEnabled: true,
+      autoRefreshEnabled: false,
+      autoRefreshIntervalMinutes: 30,
+      openWeatherMapKey: '',
+      activityPreferences: {
+        activityType: 'run',
+        minTempC: 12,
+        maxTempC: 24,
+        maxWindKmh: 25,
+        maxPopPercent: 20,
+      },
+    };
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        settings={baseSettings}
+        onUpdateSettings={onUpdateSettings}
+      />
+    );
+
+    // When primaryUnit is 'F', minTempC=12 -> 54°F and maxTempC=24 -> 75°F
+    const minTempInput = screen.getByLabelText('Min Ideal Temp') as HTMLInputElement;
+    const maxTempInput = screen.getByLabelText('Max Ideal Temp') as HTMLInputElement;
+    expect(minTempInput.value).toBe('54');
+    expect(maxTempInput.value).toBe('75');
+
+    // Editing minTemp in °F (e.g. 68°F) converts back to 20°C in settings
+    fireEvent.change(minTempInput, { target: { value: '68' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          minTempC: 20,
+        }),
+      })
+    );
+
+    // Interactive Max Wind slider shows dual km/h · mph and updates maxWindKmh
+    expect(screen.getByText(/25 km\/h · 15\.5 mph/)).toBeInTheDocument();
+    const windSlider = screen.getByLabelText('Max Wind Threshold') as HTMLInputElement;
+    fireEvent.change(windSlider, { target: { value: '35' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          maxWindKmh: 35,
+        }),
+      })
+    );
+
+    // Interactive Max Rain slider updates maxPopPercent
+    const rainSlider = screen.getByLabelText('Max Rain Probability Threshold') as HTMLInputElement;
+    fireEvent.change(rainSlider, { target: { value: '40' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          maxPopPercent: 40,
+        }),
+      })
+    );
+  });
 });

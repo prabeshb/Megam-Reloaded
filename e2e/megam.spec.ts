@@ -130,6 +130,17 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     // Select Fahrenheit Primary
     await page.getByText('Fahrenheit (°F) Primary').click();
 
+    // Verify Ideal Temp inputs automatically converted 12°C -> 54°F and 24°C -> 75°F
+    const minTempInput = page.getByLabel('Min Ideal Temp');
+    const maxTempInput = page.getByLabel('Max Ideal Temp');
+    await expect(minTempInput).toHaveValue('54');
+    await expect(maxTempInput).toHaveValue('75');
+
+    // Verify interactive Wind & Rain sliders are present and show dual units
+    await expect(page.getByText('25 km/h · 15.5 mph')).toBeVisible();
+    await expect(page.getByLabel('Max Wind Threshold')).toBeVisible();
+    await expect(page.getByLabel('Max Rain Probability Threshold')).toBeVisible();
+
     // Select Cycling Activity Window
     await page.getByText(/Cycling/).click();
 

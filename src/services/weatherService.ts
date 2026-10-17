@@ -20,6 +20,10 @@ export function cToF(c: number): number {
   return Math.round((c * 9) / 5 + 32);
 }
 
+export function fToC(f: number): number {
+  return Math.round(((f - 32) * 5) / 9);
+}
+
 export function kmhToMph(kmh: number): number {
   return Math.round(kmh * 0.621371 * 10) / 10;
 }

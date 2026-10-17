@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppSettings, ThemeOption, PrimaryUnit } from '../types/weather';
+import { cToF, fToC, kmhToMph } from '../services/weatherService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { APP_VERSION, APP_BUILD } from '../version';
 import {
@@ -178,39 +179,86 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Threshold controls */}
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="space-y-3 text-[11px]">
               <div>
                 <label className="text-slate-500 dark:text-slate-400 block mb-1">
                   Ideal Temp ({settings.primaryUnit === 'C' ? '°C' : '°F'})
                 </label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
-                    value={settings.activityPreferences.minTempC}
-                    onChange={(e) => handleActivityChange('minTempC', Number(e.target.value))}
-                    className="w-14 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
+                    aria-label="Min Ideal Temp"
+                    value={
+                      settings.primaryUnit === 'C'
+                        ? settings.activityPreferences.minTempC
+                        : cToF(settings.activityPreferences.minTempC)
+                    }
+                    onChange={(e) => {
+                      const rawVal = Number(e.target.value);
+                      const valC = settings.primaryUnit === 'C' ? rawVal : fToC(rawVal);
+                      handleActivityChange('minTempC', valC);
+                    }}
+                    className="w-16 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
                   />
-                  <span>to</span>
+                  <span className="text-slate-500">to</span>
                   <input
                     type="number"
-                    value={settings.activityPreferences.maxTempC}
-                    onChange={(e) => handleActivityChange('maxTempC', Number(e.target.value))}
-                    className="w-14 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
+                    aria-label="Max Ideal Temp"
+                    value={
+                      settings.primaryUnit === 'C'
+                        ? settings.activityPreferences.maxTempC
+                        : cToF(settings.activityPreferences.maxTempC)
+                    }
+                    onChange={(e) => {
+                      const rawVal = Number(e.target.value);
+                      const valC = settings.primaryUnit === 'C' ? rawVal : fToC(rawVal);
+                      handleActivityChange('maxTempC', valC);
+                    }}
+                    className="w-16 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
                   />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                    ({settings.activityPreferences.minTempC}°C–{settings.activityPreferences.maxTempC}°C · {cToF(settings.activityPreferences.minTempC)}°F–{cToF(settings.activityPreferences.maxTempC)}°F)
+                  </span>
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-500 dark:text-slate-400 block mb-1">
-                  Max Wind & Rain
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="text-[11px] text-slate-700 dark:text-slate-300">
-                    ≤ {settings.activityPreferences.maxWindKmh} km/h
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Wind</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxWindKmh} km/h · {kmhToMph(settings.activityPreferences.maxWindKmh)} mph
+                    </span>
                   </div>
-                  <div className="text-[11px] text-slate-700 dark:text-slate-300">
-                    ≤ {settings.activityPreferences.maxPopPercent}% rain
+                  <input
+                    type="range"
+                    aria-label="Max Wind Threshold"
+                    min={5}
+                    max={60}
+                    step={5}
+                    value={settings.activityPreferences.maxWindKmh}
+                    onChange={(e) => handleActivityChange('maxWindKmh', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Rain</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxPopPercent}% rain
+                    </span>
                   </div>
+                  <input
+                    type="range"
+                    aria-label="Max Rain Probability Threshold"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={settings.activityPreferences.maxPopPercent}
+                    onChange={(e) => handleActivityChange('maxPopPercent', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
                 </div>
               </div>
             </div>
