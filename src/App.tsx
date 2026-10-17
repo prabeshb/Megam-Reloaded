@@ -21,6 +21,7 @@ import {
   getWmoConditionMeta,
 } from './services/weatherService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { APP_VERSION, APP_BUILD } from './version';
 import { MobileFrame } from './components/MobileFrame';
 import { WeatherHeader } from './components/WeatherHeader';
 import { LocationPagerIndicator } from './components/LocationPagerIndicator';
@@ -424,13 +425,19 @@ export default function App() {
                 primaryUnit={settings.primaryUnit}
               />
 
-              {/* Transparent Data Attribution & Privacy Footer */}
-              <div className="px-6 pt-2 pb-6 text-center">
+              {/* Transparent Data Attribution & Running Version Footer */}
+              <div className="px-6 pt-3 pb-8 text-center flex flex-col items-center">
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   Data sourced via {weatherData.source} · Local On-Device Privacy
                 </div>
-                <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                  Megam Weather v2.0 · Fast, Lightweight Mobile App
+                <div className="mt-2 flex items-center justify-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-[11px] font-bold tabular-nums border border-slate-300/50 dark:border-slate-700/60 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    v{APP_VERSION}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                    build {APP_BUILD}
+                  </span>
                 </div>
               </div>
             </div>

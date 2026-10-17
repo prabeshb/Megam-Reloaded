@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppSettings, ThemeOption, PrimaryUnit } from '../types/weather';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { APP_VERSION, APP_BUILD } from '../version';
 import {
   X,
   Bell,
@@ -408,6 +409,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
               Powered by Open-Meteo & OpenWeatherMap APIs. Zero user tracking or external location logging. All coordinate calculations occur entirely on-device.
             </p>
+          </div>
+
+          {/* App Version Info */}
+          <div className="pt-1 pb-3 text-center">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              Megam Weather v{APP_VERSION}
+            </span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono ml-1.5">
+              ({APP_BUILD})
+            </span>
           </div>
         </div>
       </div>

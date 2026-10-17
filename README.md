@@ -111,7 +111,8 @@ A fast, lightweight, mobile-first weather application delivering quick forecasts
 │   │   └── weather.ts              # TypeScript interfaces and data models
 │   ├── App.tsx                     # Main application container
 │   ├── index.css                   # Global styles and font definitions
-│   └── main.tsx                    # React DOM entry point
+│   ├── main.tsx                    # React DOM entry point
+│   └── version.ts                  # App version & build number tracker
 ├── .npmrc                          # npm configuration (legacy-peer-deps for Vercel builds)
 ├── capacitor.config.ts             # Capacitor Android configuration
 ├── index.html                      # HTML entry with mobile viewport tags
@@ -140,6 +141,21 @@ npm run build
 ```bash
 npm run lint
 ```
+
+### 4. Version Management & Code Commits
+The currently running application version is managed in `src/version.ts`:
+```typescript
+export const APP_VERSION = '2.0.1';
+export const APP_BUILD = '2026.10.16.1';
+```
+
+With each code commit or feature release:
+1. Increment `APP_VERSION` (e.g. `2.0.1` -> `2.0.2`) and update `APP_BUILD` in `src/version.ts`.
+2. Update `"version"` in `package.json`.
+3. If deploying an Android update, increment `versionCode` and update `versionName` in `android/app/build.gradle`.
+4. Run `npm run android:sync` to propagate the new version into the native Android platform.
+
+The running version badge is rendered live at the bottom of the main screen and inside the **Settings** modal.
 
 ---
 
