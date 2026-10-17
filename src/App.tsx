@@ -38,6 +38,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WidgetPreviewModal } from './components/WidgetPreviewModal';
 import { SevereAlertBanner } from './components/SevereAlertBanner';
 import { Loader2, AlertCircle, WifiOff } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 const DEFAULT_LOCATION: LocationInfo = {
   name: 'New York',
@@ -485,6 +486,7 @@ export default function App() {
         weatherData={weatherData}
         primaryUnit={settings.primaryUnit}
       />
+      <Analytics />
     </MobileFrame>
   );
 }
