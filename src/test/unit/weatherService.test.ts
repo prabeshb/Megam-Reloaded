@@ -21,6 +21,10 @@ import {
   saveSettings,
   exportAppConfiguration,
   parseImportedConfiguration,
+  buildLocationShareUrl,
+  parseSharedLocationFromUrl,
+  formatPlaceWeatherShareText,
+  formatAppShareText,
 } from '../../services/weatherService';
 import { LocationInfo, WeatherData } from '../../types/weather';
 
@@ -263,6 +267,96 @@ describe('weatherService - Unit Tests', () => {
       const base64Str = btoa(encodeURIComponent(jsonStr));
       const parsedFromBase64 = parseImportedConfiguration(base64Str);
       expect(parsedFromBase64.favorites[0].name).toBe('Sydney');
+    });
+
+    it('builds and parses deep-link location share URLs and formats dual-unit place & app share text', () => {
+      const shareUrl = buildLocationShareUrl(
+        { name: 'Tokyo', country: 'Japan', admin: 'Tokyo', lat: 35.6762, lon: 139.6503 },
+        'https://megam.example.com'
+      );
+      expect(shareUrl).toBe(
+        'https://megam.example.com/?lat=35.6762&lon=139.6503&name=Tokyo&country=Japan&admin=Tokyo'
+      );
+
+      const parsed = parseSharedLocationFromUrl(
+        '?lat=48.8566&lon=2.3522&name=Paris&country=France&admin=Ile-de-France'
+      );
+      expect(parsed).toEqual({
+        name: 'Paris',
+        country: 'France',
+        admin: 'Ile-de-France',
+        lat: 48.8566,
+        lon: 2.3522,
+        isCurrentLocation: false,
+      });
+
+      // Invalid or missing parameters return null
+      expect(parseSharedLocationFromUrl('')).toBeNull();
+      expect(parseSharedLocationFromUrl('?lat=999&lon=2.35&name=Invalid')).toBeNull();
+      expect(parseSharedLocationFromUrl('?lat=48.85&lon=2.35')).toBeNull();
+
+      const sampleWeather: WeatherData = {
+        location: MOCK_LOCATION,
+        current: {
+          tempC: 24,
+          tempF: 75,
+          feelsLikeC: 25,
+          feelsLikeF: 77,
+          humidity: 55,
+          windSpeedKmh: 15,
+          windSpeedMph: 9.3,
+          condition: 'Mainly clear',
+          conditionCode: 1,
+          isDay: true,
+          sunrise: '6:00 AM',
+          sunset: '6:00 PM',
+          surfacePressure: 1015,
+          pressureTrend: 'steady',
+          pressureDeltaHpa: 0,
+        },
+        hourly: [],
+        daily: [
+          {
+            date: '2026-10-18',
+            dayName: 'Today',
+            isToday: true,
+            maxTempC: 26,
+            maxTempF: 79,
+            minTempC: 16,
+            minTempF: 61,
+            condition: 'Mainly clear',
+            conditionCode: 1,
+            popPercent: 10,
+            sunrise: '6:00 AM',
+            sunset: '6:00 PM',
+          },
+        ],
+        fetchedAt: Date.now(),
+        source: 'Open-Meteo',
+      };
+
+      const placeShareC = formatPlaceWeatherShareText(
+        sampleWeather,
+        'C',
+        'https://megam.example.com'
+      );
+      expect(placeShareC.title).toContain('Tokyo, Japan');
+      expect(placeShareC.text).toContain('24°C · 75°F (Mainly clear)');
+      expect(placeShareC.text).toContain('High 26°C (79°F) / Low 16°C (61°F)');
+      expect(placeShareC.url).toContain('lat=35.68&lon=139.65&name=Tokyo');
+
+      const placeShareF = formatPlaceWeatherShareText(
+        sampleWeather,
+        'F',
+        'https://megam.example.com'
+      );
+      expect(placeShareF.text).toContain('75°F · 24°C (Mainly clear)');
+      expect(placeShareF.text).toContain('High 79°F (26°C) / Low 61°F (16°C)');
+
+      const appShare = formatAppShareText('https://megam.example.com');
+      expect(appShare.title).toContain('Megam Weather');
+      expect(appShare.text).toContain('°C & °F');
+      expect(appShare.url).toBe('https://megam.example.com/');
     });
   });
 

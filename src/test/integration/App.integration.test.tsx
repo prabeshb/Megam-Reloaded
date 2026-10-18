@@ -193,4 +193,22 @@ describe('Megam Weather App - Integration Tests', () => {
 
     Object.defineProperty(window.navigator, 'onLine', { value: true, writable: true });
   });
+
+  it('loads shared location directly from URL query parameters (?lat=...&lon=...&name=...) and opens ShareModal', async () => {
+    window.history.pushState({}, '', '/?lat=48.8566&lon=2.3522&name=Paris&country=France');
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Change location')).toHaveTextContent('Paris');
+    });
+
+    // Open ShareModal via Hero share button
+    fireEvent.click(screen.getByLabelText('Share place weather'));
+    expect(screen.getByText('Share Weather & App')).toBeInTheDocument();
+    expect(screen.getByText(/Paris, France:/)).toBeInTheDocument();
+
+    // Clean up URL
+    window.history.pushState({}, '', '/');
+  });
 });

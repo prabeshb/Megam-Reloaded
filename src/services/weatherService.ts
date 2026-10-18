@@ -14,6 +14,7 @@ import {
   PressureTrend,
   MinuteRainBar,
   ActivityPreferences,
+  PrimaryUnit,
 } from '../types/weather';
 
 export function cToF(c: number): number {
@@ -892,3 +893,125 @@ export function parseImportedConfiguration(rawInput: string): {
     favorites: mergedFavorites,
   };
 }
+
+export function buildLocationShareUrl(
+  location: LocationInfo,
+  baseOrigin: string = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : 'https://megam.app'
+): string {
+  const cleanOrigin = baseOrigin.replace(/\/$/, '');
+  const params = new URLSearchParams();
+  params.set('lat', String(Number(location.lat.toFixed(4))));
+  params.set('lon', String(Number(location.lon.toFixed(4))));
+  params.set('name', location.name);
+  if (location.country) {
+    params.set('country', location.country);
+  }
+  if (location.admin) {
+    params.set('admin', location.admin);
+  }
+  return `${cleanOrigin}/?${params.toString()}`;
+}
+
+export function parseSharedLocationFromUrl(searchString: string): LocationInfo | null {
+  if (!searchString) return null;
+  try {
+    const params = new URLSearchParams(searchString);
+    const latRaw = params.get('lat');
+    const lonRaw = params.get('lon');
+    const name = params.get('name')?.trim();
+
+    if (!latRaw || !lonRaw || !name) {
+      return null;
+    }
+
+    const lat = Number(latRaw);
+    const lon = Number(lonRaw);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      lat < -90 ||
+      lat > 90 ||
+      lon < -180 ||
+      lon > 180
+    ) {
+      return null;
+    }
+
+    const country = params.get('country')?.trim() || '';
+    const admin = params.get('admin')?.trim() || undefined;
+
+    return {
+      name,
+      country,
+      ...(admin ? { admin } : {}),
+      lat,
+      lon,
+      isCurrentLocation: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export interface SharePayload {
+  title: string;
+  text: string;
+  url: string;
+}
+
+export function formatPlaceWeatherShareText(
+  weatherData: WeatherData,
+  primaryUnit: PrimaryUnit = 'C',
+  baseOrigin?: string
+): SharePayload {
+  const { location, current, daily } = weatherData;
+  const isC = primaryUnit === 'C';
+  const placeLabel = location.country
+    ? `${location.name}, ${location.country}`
+    : location.name;
+
+  const tempPair = isC
+    ? `${current.tempC}°C · ${current.tempF}°F`
+    : `${current.tempF}°F · ${current.tempC}°C`;
+
+  const feelsPair = isC
+    ? `${current.feelsLikeC}°C (${current.feelsLikeF}°F)`
+    : `${current.feelsLikeF}°F (${current.feelsLikeC}°C)`;
+
+  const today = daily?.[0];
+  const highLowLine = today
+    ? isC
+      ? ` · High ${today.maxTempC}°C (${today.maxTempF}°F) / Low ${today.minTempC}°C (${today.minTempF}°F)`
+      : ` · High ${today.maxTempF}°F (${today.maxTempC}°C) / Low ${today.minTempF}°F (${today.minTempC}°C)`
+    : '';
+
+  const url = buildLocationShareUrl(location, baseOrigin);
+  const title = `Weather in ${placeLabel} — Megam Weather`;
+  const text = [
+    `🌤️ ${placeLabel}: ${tempPair} (${current.condition})`,
+    `Feels like ${feelsPair}${highLowLine}`,
+    `💨 Wind: ${current.windSpeedKmh} km/h · ${current.windSpeedMph} mph | 💧 Humidity: ${current.humidity}%`,
+    `Check live forecast on Megam Weather:`,
+    url,
+  ].join('\n');
+
+  return { title, text, url };
+}
+
+export function formatAppShareText(
+  baseOrigin: string = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : 'https://megam.app'
+): SharePayload {
+  const url = `${baseOrigin.replace(/\/$/, '')}/`;
+  const title = 'Megam Weather — Dual-Unit Privacy-First Forecast';
+  const text = [
+    'Check out Megam Weather — a fast, 100% privacy-first weather app with simultaneous °C & °F temperatures, 60-minute rain nowcasting, UV/AQI health alerts, and zero tracking:',
+    url,
+  ].join('\n');
+
+  return { title, text, url };
+}
+

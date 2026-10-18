@@ -26,6 +26,7 @@ import {
   Copy,
   Check,
   Activity,
+  Share2,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -35,6 +36,7 @@ interface SettingsModalProps {
   onUpdateSettings: (newSettings: AppSettings) => void;
   favorites?: FavoriteLocation[];
   onUpdateFavorites?: (newFavorites: FavoriteLocation[]) => void;
+  onOpenShareApp?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -44,6 +46,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateSettings,
   favorites,
   onUpdateFavorites,
+  onOpenShareApp,
 }) => {
   const [apiKeyInput, setApiKeyInput] = useState(settings.openWeatherMapKey || '');
   const [keySavedStatus, setKeySavedStatus] = useState<string | null>(null);
@@ -652,6 +655,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Share Megam with Friends */}
+          {onOpenShareApp && (
+            <div className="p-3.5 rounded-2xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/60 dark:border-sky-800/60 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 shrink-0">
+                  <Share2 size={18} />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                    Share Megam with Friends
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Invite others to dual °C/°F privacy-first weather
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenShareApp();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold shrink-0 transition-colors"
+              >
+                Share App
+              </button>
+            </div>
+          )}
 
           {/* Data Source & Privacy Transparency */}
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5">

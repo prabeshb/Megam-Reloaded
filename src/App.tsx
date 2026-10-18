@@ -20,6 +20,7 @@ import {
   getLastSavedLocation,
   getWmoConditionMeta,
   fuzzCoordinate,
+  parseSharedLocationFromUrl,
 } from './services/weatherService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { APP_VERSION, APP_BUILD } from './version';
@@ -39,6 +40,7 @@ import { SearchModal } from './components/SearchModal';
 import { FavoritesDrawer } from './components/FavoritesDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { WidgetPreviewModal } from './components/WidgetPreviewModal';
+import { ShareModal } from './components/ShareModal';
 import { SevereAlertBanner } from './components/SevereAlertBanner';
 import { Loader2, AlertCircle, WifiOff } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -57,9 +59,14 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(getSavedSettings);
   const [favorites, setFavorites] = useState<FavoriteLocation[]>(getSavedFavorites);
 
+  const initialSharedLocation = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return parseSharedLocationFromUrl(window.location.search);
+  }, []);
+
   // Current detected GPS location (page 0)
   const [currentGpsLocation, setCurrentGpsLocation] = useState<LocationInfo>(() => {
-    return getLastSavedLocation() || DEFAULT_LOCATION;
+    return initialSharedLocation || getLastSavedLocation() || DEFAULT_LOCATION;
   });
 
   // Pager index: 0 = GPS / Current Location; 1..N = favorites
@@ -93,6 +100,8 @@ export default function App() {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWidgetPreviewOpen, setIsWidgetPreviewOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareInitialTab, setShareInitialTab] = useState<'place' | 'app'>('place');
 
   // Horizontal Swipe Pager Touch Handling
   const touchStartX = useRef<number>(0);
@@ -241,8 +250,14 @@ export default function App() {
     );
   }, [currentGpsLocation, activePageIndex, loadWeather, settings.coordinatePrivacyFuzzing]);
 
-  // Initial mount: load cached data instantly, then trigger async GPS
+  // Initial mount: if launched via a shared place deep link, clean URL bar and keep shared city; otherwise trigger async GPS
   useEffect(() => {
+    if (initialSharedLocation) {
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname || '/');
+      }
+      return;
+    }
     handleDetectGPS();
   }, []);
 
@@ -356,6 +371,10 @@ export default function App() {
         onOpenFavorites={() => setIsFavoritesOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenWidgets={() => setIsWidgetPreviewOpen(true)}
+        onOpenShare={() => {
+          setShareInitialTab('place');
+          setIsShareOpen(true);
+        }}
         onRefresh={handleManualRefresh}
         isRefreshing={isRefreshing}
         isOffline={!isOnline || !!weatherData?.isOfflineCached}
@@ -414,6 +433,10 @@ export default function App() {
                 onOpenSearch={() => setIsSearchOpen(true)}
                 isFavorite={isCurrentFavorite}
                 onToggleFavorite={handleToggleFavorite}
+                onOpenShare={() => {
+                  setShareInitialTab('place');
+                  setIsShareOpen(true);
+                }}
                 timezone={weatherData.timezone}
                 utcOffsetSeconds={weatherData.utcOffsetSeconds}
               />
@@ -512,6 +535,10 @@ export default function App() {
           setFavorites(newFavs);
           saveFavorites(newFavs);
         }}
+        onOpenShareApp={() => {
+          setShareInitialTab('app');
+          setIsShareOpen(true);
+        }}
       />
 
       <WidgetPreviewModal
@@ -519,6 +546,14 @@ export default function App() {
         onClose={() => setIsWidgetPreviewOpen(false)}
         weatherData={weatherData}
         primaryUnit={settings.primaryUnit}
+      />
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        weatherData={weatherData}
+        primaryUnit={settings.primaryUnit}
+        initialTab={shareInitialTab}
       />
       <Analytics />
     </MobileFrame>
