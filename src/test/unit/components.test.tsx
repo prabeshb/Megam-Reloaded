@@ -11,6 +11,7 @@ import { DailyForecast } from '../../components/DailyForecast';
 import { SevereAlertBanner } from '../../components/SevereAlertBanner';
 import { WidgetPreviewModal } from '../../components/WidgetPreviewModal';
 import { SettingsModal } from '../../components/SettingsModal';
+import { WhatToWearStrip } from '../../components/WhatToWearStrip';
 import { WeatherData, AppSettings } from '../../types/weather';
 
 const MOCK_WEATHER_DATA: WeatherData = {
@@ -382,5 +383,54 @@ describe('UI Components - Unit Tests', () => {
         }),
       })
     );
+  });
+
+  it('evaluates next 6 hours in WhatToWearStrip for umbrella, jacket layering, UV protection, and wind/comfort chips', () => {
+    render(
+      <WhatToWearStrip
+        current={{ ...MOCK_WEATHER_DATA.current, tempC: 20, tempF: 68, uvIndex: 7 }}
+        hourly={[
+          {
+            time: '2026-10-16T13:00',
+            hourLabel: '1 PM',
+            tempC: 20,
+            tempF: 68,
+            condition: 'Clear sky',
+            conditionCode: 0,
+            popPercent: 10,
+            isDay: true,
+            windSpeedKmh: 15,
+            uvIndex: 7,
+          },
+          {
+            time: '2026-10-16T15:00',
+            hourLabel: '3 PM',
+            tempC: 18,
+            tempF: 64,
+            condition: 'Rain',
+            conditionCode: 61,
+            popPercent: 60,
+            isDay: true,
+            windSpeedKmh: 20,
+          },
+          {
+            time: '2026-10-16T18:00',
+            hourLabel: '6 PM',
+            tempC: 11,
+            tempF: 52,
+            condition: 'Mainly clear',
+            conditionCode: 1,
+            popPercent: 5,
+            isDay: false,
+            windSpeedKmh: 12,
+          },
+        ]}
+        primaryUnit="C"
+      />
+    );
+
+    expect(screen.getByText(/Bring an umbrella \(Rain likely at 3 PM\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Light jacket \(Drops to 11°C \/ 52°F/)).toBeInTheDocument();
+    expect(screen.getByText(/Sunglasses & SPF/)).toBeInTheDocument();
   });
 });

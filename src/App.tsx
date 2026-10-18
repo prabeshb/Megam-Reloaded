@@ -27,6 +27,7 @@ import { WeatherHeader } from './components/WeatherHeader';
 import { LocationPagerIndicator } from './components/LocationPagerIndicator';
 import { YesterdayComparisonBanner } from './components/YesterdayComparisonBanner';
 import { CurrentWeatherHero } from './components/CurrentWeatherHero';
+import { WhatToWearStrip } from './components/WhatToWearStrip';
 import { NextHourRainBar } from './components/NextHourRainBar';
 import { QuickMetricsGrid } from './components/QuickMetricsGrid';
 import { HourlyForecast } from './components/HourlyForecast';
@@ -413,6 +414,13 @@ export default function App() {
                 onToggleFavorite={handleToggleFavorite}
                 timezone={weatherData.timezone}
                 utcOffsetSeconds={weatherData.utcOffsetSeconds}
+              />
+
+              {/* "What to Wear / Bring" Contextual Recommendation Strip */}
+              <WhatToWearStrip
+                current={weatherData.current}
+                hourly={weatherData.hourly}
+                primaryUnit={settings.primaryUnit}
               />
 
               {/* 60-Minute Rain Bar Nowcasting (PRD v2 Value-Add Feature) */}

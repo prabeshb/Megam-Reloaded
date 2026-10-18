@@ -69,6 +69,7 @@ export interface HourlyForecast {
   popPercent: number;
   isDay: boolean;
   windSpeedKmh?: number;
+  uvIndex?: number;
   isActivityOptimal?: boolean;
 }
 

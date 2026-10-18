@@ -100,6 +100,9 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await expect(page.getByText('73°F').first()).toBeVisible();
     await expect(page.getByText('Mainly clear').first()).toBeVisible();
 
+    // What to Wear / Bring Contextual Recommendation Strip
+    await expect(page.getByTestId('what-to-wear-strip')).toBeVisible();
+
     // 60-Minute Rain Bar Nowcasting
     await expect(page.getByText('Next 60 Minutes', { exact: true })).toBeVisible();
     await expect(page.getByText('Live Radar Nowcast')).toBeVisible();
