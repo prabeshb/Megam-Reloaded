@@ -178,4 +178,19 @@ describe('Megam Weather App - Integration Tests', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('renders honest No Offline Cache Available state with retry button when viewing an uncached city offline', async () => {
+    Object.defineProperty(window.navigator, 'onLine', { value: false, writable: true });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'No Offline Cache Available for New York' })
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+
+    Object.defineProperty(window.navigator, 'onLine', { value: true, writable: true });
+  });
 });

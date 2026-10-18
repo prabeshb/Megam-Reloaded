@@ -516,7 +516,9 @@ export async function fetchWeather(
   const cached = getCachedWeatherData(location.lat, location.lon);
   if (cached) return cached;
 
-  return generateSyntheticFallback(location, activityPrefs);
+  throw new Error(
+    `No offline cache available for ${location.name}. Connect to the internet to fetch the forecast.`
+  );
 }
 
 // OpenWeatherMap implementation
@@ -620,69 +622,6 @@ async function fetchFromOpenWeatherMap(
 
   saveWeatherDataToCache(weatherData);
   return weatherData;
-}
-
-function generateSyntheticFallback(location: LocationInfo, activityPrefs?: ActivityPreferences): WeatherData {
-  const tempC = 21;
-  const conditionMeta = getWmoConditionMeta(1, true);
-  return {
-    location,
-    current: {
-      tempC,
-      tempF: cToF(tempC),
-      feelsLikeC: 20,
-      feelsLikeF: cToF(20),
-      humidity: 56,
-      windSpeedKmh: 14,
-      windSpeedMph: kmhToMph(14),
-      condition: conditionMeta.description,
-      conditionCode: 1,
-      isDay: true,
-      sunrise: '6:32 AM',
-      sunset: '7:42 PM',
-      surfacePressure: 1016,
-      pressureTrend: 'rising',
-      pressureDeltaHpa: 1.2,
-    },
-    hourly: Array.from({ length: 12 }).map((_, idx) => ({
-      time: new Date(Date.now() + idx * 3600000).toISOString(),
-      hourLabel: idx === 0 ? 'Now' : `${(new Date().getHours() + idx) % 24}:00`,
-      tempC: tempC - (idx > 6 ? 2 : -1),
-      tempF: cToF(tempC - (idx > 6 ? 2 : -1)),
-      condition: 'Mainly clear',
-      conditionCode: 1,
-      popPercent: 5,
-      isDay: true,
-      windSpeedKmh: 12,
-      isActivityOptimal: true,
-    })),
-    daily: ['Today', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'].map((day, idx) => ({
-      date: new Date(Date.now() + idx * 86400000).toISOString().slice(0, 10),
-      dayName: day,
-      isToday: idx === 0,
-      maxTempC: 23 - (idx % 2),
-      maxTempF: cToF(23 - (idx % 2)),
-      minTempC: 13 + (idx % 2),
-      minTempF: cToF(13 + (idx % 2)),
-      condition: idx === 2 ? 'Scattered rain' : 'Mainly clear',
-      conditionCode: idx === 2 ? 61 : 1,
-      popPercent: idx === 2 ? 60 : 10,
-      sunrise: '6:32 AM',
-      sunset: '7:42 PM',
-    })),
-    yesterdayComparison: {
-      tempDiffC: -2,
-      tempDiffF: -4,
-      isWarmer: false,
-      humidityDiff: -5,
-      summaryText: '2°C (4°F) cooler and less humid than yesterday',
-    },
-    nextHourRain: calculateNextHourRain(1, 5),
-    astronomicalWindows: calculateAstronomicalWindows('', ''),
-    fetchedAt: Date.now(),
-    source: 'Offline Cache',
-    isOfflineCached: true,
-  };
 }
 
 // Favorites local persistence

@@ -322,14 +322,44 @@ describe('weatherService - Unit Tests', () => {
       expect(data.hourly[0].isActivityOptimal).toBe(true);
     });
 
-    it('falls back to cached data or synthetic fallback when offline', async () => {
+    it('returns cached data when offline and throws explicit offline error if no cache exists for that location', async () => {
       Object.defineProperty(window.navigator, 'onLine', { value: false, writable: true });
 
-      // No cache yet -> returns synthetic fallback
-      const synthetic = await fetchWeather(MOCK_LOCATION);
-      expect(synthetic.source).toBe('Offline Cache');
-      expect(synthetic.isOfflineCached).toBe(true);
-      expect(synthetic.current.tempC).toBe(21);
+      // No cache yet -> throws honest offline error instead of fake synthetic weather
+      await expect(fetchWeather(MOCK_LOCATION)).rejects.toThrow(
+        'No offline cache available for Tokyo'
+      );
+
+      // Save real cache and verify offline returns cached data
+      saveWeatherDataToCache({
+        location: MOCK_LOCATION,
+        current: {
+          tempC: 19,
+          tempF: 66,
+          feelsLikeC: 18,
+          feelsLikeF: 64,
+          humidity: 60,
+          windSpeedKmh: 10,
+          windSpeedMph: 6.2,
+          condition: 'Clear sky',
+          conditionCode: 0,
+          isDay: true,
+          sunrise: '6:00 AM',
+          sunset: '6:00 PM',
+          surfacePressure: 1013,
+          pressureTrend: 'steady',
+          pressureDeltaHpa: 0,
+        },
+        hourly: [],
+        daily: [],
+        fetchedAt: Date.now(),
+        source: 'Open-Meteo',
+      });
+
+      const cachedResult = await fetchWeather(MOCK_LOCATION);
+      expect(cachedResult.source).toBe('Offline Cache');
+      expect(cachedResult.isOfflineCached).toBe(true);
+      expect(cachedResult.current.tempC).toBe(19);
     });
   });
 });

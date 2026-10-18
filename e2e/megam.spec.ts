@@ -204,4 +204,26 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await page.getByRole('button', { name: 'Expanded View' }).click();
     await page.getByRole('button', { name: 'Mobile Device' }).click();
   });
+
+  test('E2E 5: Displays honest No Offline Cache Available state with Retry button when offline and uncached', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/');
+    await expect(page.getByText('Mainly clear').first()).toBeVisible();
+
+    // Go offline and switch to an uncached favorite city (London)
+    await context.setOffline(true);
+    await page.getByTitle('London').click();
+
+    await expect(
+      page.getByRole('heading', { name: 'No Offline Cache Available for London' })
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+
+    // Restore online and click Retry
+    await context.setOffline(false);
+    await page.getByRole('button', { name: 'Retry' }).click();
+    await expect(page.getByText('Mainly clear').first()).toBeVisible();
+  });
 });
