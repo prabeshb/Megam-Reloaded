@@ -12,6 +12,7 @@ import { SevereAlertBanner } from '../../components/SevereAlertBanner';
 import { WidgetPreviewModal } from '../../components/WidgetPreviewModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { WhatToWearStrip } from '../../components/WhatToWearStrip';
+import { ShareModal } from '../../components/ShareModal';
 import { WeatherData, AppSettings } from '../../types/weather';
 
 const MOCK_WEATHER_DATA: WeatherData = {
@@ -466,5 +467,61 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText(/Bring an umbrella \(Rain likely at 3 PM\)/)).toBeInTheDocument();
     expect(screen.getByText(/Light jacket \(Drops to 11°C \/ 52°F/)).toBeInTheDocument();
     expect(screen.getByText(/Sunglasses & SPF/)).toBeInTheDocument();
+  });
+
+  it('renders ShareModal, switches between Place Weather and Megam App tabs, copies to clipboard, and invokes Web Share API', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock },
+      share: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const onOpenShare = vi.fn();
+    render(
+      <CurrentWeatherHero
+        location={MOCK_WEATHER_DATA.location}
+        current={MOCK_WEATHER_DATA.current}
+        todayForecast={MOCK_WEATHER_DATA.daily[0]}
+        primaryUnit="C"
+        onOpenSearch={vi.fn()}
+        isFavorite={false}
+        onToggleFavorite={vi.fn()}
+        onOpenShare={onOpenShare}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText('Share place weather'));
+    expect(onOpenShare).toHaveBeenCalledTimes(1);
+
+    render(
+      <ShareModal
+        isOpen={true}
+        onClose={vi.fn()}
+        weatherData={MOCK_WEATHER_DATA}
+        primaryUnit="C"
+        initialTab="place"
+      />
+    );
+
+    // Place Weather tab is active by default
+    expect(screen.getByText(/London, United Kingdom: 18°C · 64°F/)).toBeInTheDocument();
+
+    // Copy Summary & Link
+    fireEvent.click(screen.getByRole('button', { name: /Copy Summary & Link/i }));
+    expect(writeTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('London, United Kingdom: 18°C · 64°F')
+    );
+
+    // Switch to Share Megam App tab
+    fireEvent.click(screen.getByRole('button', { name: 'Share Megam App' }));
+    expect(screen.getByText(/100% privacy-first weather app/i)).toBeInTheDocument();
+
+    // Trigger Native Web Share
+    fireEvent.click(screen.getByRole('button', { name: /Share via Device/i }));
+    expect(navigator.share).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining('Megam Weather'),
+      })
+    );
   });
 });

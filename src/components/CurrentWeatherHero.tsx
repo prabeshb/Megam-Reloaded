@@ -1,7 +1,7 @@
 import React from 'react';
 import { CurrentWeather, DailyForecast, LocationInfo, PrimaryUnit } from '../types/weather';
 import { WeatherIcon } from './WeatherIcons';
-import { MapPin, ArrowUp, ArrowDown, Clock } from 'lucide-react';
+import { MapPin, ArrowUp, ArrowDown, Clock, Share2 } from 'lucide-react';
 
 interface CurrentWeatherHeroProps {
   location: LocationInfo;
@@ -11,6 +11,7 @@ interface CurrentWeatherHeroProps {
   onOpenSearch: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onOpenShare?: () => void;
   timezone?: string;
   utcOffsetSeconds?: number;
 }
@@ -23,6 +24,7 @@ export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
   onOpenSearch,
   isFavorite,
   onToggleFavorite,
+  onOpenShare,
   timezone,
   utcOffsetSeconds,
 }) => {
@@ -127,6 +129,17 @@ export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         </button>
+
+        {onOpenShare && (
+          <button
+            onClick={onOpenShare}
+            className="p-1.5 rounded-full text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors"
+            title="Share place weather"
+            aria-label="Share place weather"
+          >
+            <Share2 size={17} />
+          </button>
+        )}
       </div>
 
       {/* Destination Local Time Clock Pill */}

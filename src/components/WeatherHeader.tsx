@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Star, Settings, RefreshCw, WifiOff, Layers } from 'lucide-react';
+import { Search, Star, Settings, RefreshCw, WifiOff, Layers, Share2 } from 'lucide-react';
 import { formatStaleness } from '../services/weatherService';
 
 interface WeatherHeaderProps {
@@ -7,6 +7,7 @@ interface WeatherHeaderProps {
   onOpenFavorites: () => void;
   onOpenSettings: () => void;
   onOpenWidgets: () => void;
+  onOpenShare?: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
   isOffline: boolean;
@@ -19,6 +20,7 @@ export const WeatherHeader: React.FC<WeatherHeaderProps> = ({
   onOpenFavorites,
   onOpenSettings,
   onOpenWidgets,
+  onOpenShare,
   onRefresh,
   isRefreshing,
   isOffline,
@@ -59,6 +61,17 @@ export const WeatherHeader: React.FC<WeatherHeaderProps> = ({
         >
           <RefreshCw size={17} className={isRefreshing ? 'animate-spin text-sky-500' : ''} />
         </button>
+
+        {onOpenShare && (
+          <button
+            onClick={onOpenShare}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
+            title="Share weather or app"
+            aria-label="Share weather or app"
+          >
+            <Share2 size={17} />
+          </button>
+        )}
 
         <button
           onClick={onOpenWidgets}

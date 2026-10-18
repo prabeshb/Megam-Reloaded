@@ -273,4 +273,34 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(page.getByText('Mainly clear').first()).toBeVisible();
   });
+
+  test('E2E 6: Shares place weather & Megam app via ShareModal and opens deep-linked city forecast URL', async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/');
+    await expect(page.getByText('Mainly clear').first()).toBeVisible();
+
+    // Open ShareModal from CurrentWeatherHero "Share place weather" button
+    await page.getByLabel('Share place weather').click();
+    await expect(page.getByText('Share Weather & App')).toBeVisible();
+    await expect(page.getByText(/New York, United States: 23°C · 73°F/)).toBeVisible();
+
+    // Copy Summary & Link and verify confirmation badge
+    await page.getByRole('button', { name: /Copy Summary & Link/i }).click();
+    await expect(page.getByText('Copied to clipboard!')).toBeVisible();
+
+    // Switch to Share Megam App tab
+    await page.getByRole('button', { name: 'Share Megam App' }).click();
+    await expect(page.getByText(/100% privacy-first weather app/i)).toBeVisible();
+
+    // Close ShareModal
+    await page.getByLabel('Close share modal').click();
+
+    // Open a shared place deep link directly (?lat=52.52&lon=13.41&name=Berlin&country=Germany)
+    await page.goto('/?lat=52.52&lon=13.41&name=Berlin&country=Germany');
+    await expect(page.getByTitle('Change location')).toContainText('Berlin');
+    await expect(page.getByTitle('Change location')).toContainText('Germany');
+  });
 });
