@@ -286,42 +286,62 @@ describe('weatherService - Unit Tests', () => {
       const humids = Array(48).fill(50);
       humids[0] = 40; // +15% more humid
 
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          timezone: 'Asia/Tokyo',
-          utc_offset_seconds: 32400,
-          current: {
-            temperature_2m: 24,
-            apparent_temperature: 25,
-            relative_humidity_2m: 55,
-            is_day: 1,
-            weather_code: 95, // Thunderstorm -> triggers severe alert
-            wind_speed_10m: 18,
-            surface_pressure: 1015,
-          },
-          hourly: {
-            time: times,
-            surface_pressure: pressures,
-            temperature_2m: temps,
-            relative_humidity_2m: humids,
-            wind_speed_10m: Array(48).fill(15),
-            precipitation_probability: Array(48).fill(10),
-            weather_code: Array(48).fill(1),
-            is_day: Array(48).fill(1),
-            precipitation: Array(48).fill(0),
-          },
-          daily: {
-            time: ['2026-10-15', '2026-10-16', '2026-10-17'],
-            temperature_2m_max: [20, 26, 24],
-            temperature_2m_min: [12, 16, 15],
-            weather_code: [1, 95, 2],
-            precipitation_probability_max: [10, 80, 20],
-            sunrise: ['2026-10-15T06:00', '2026-10-16T06:01', '2026-10-17T06:02'],
-            sunset: ['2026-10-15T18:00', '2026-10-16T17:59', '2026-10-17T17:58'],
-          },
-        }),
-      } as Response);
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('air-quality-api.open-meteo.com')) {
+          return {
+            ok: true,
+            json: async () => ({
+              current: {
+                us_aqi: 42,
+                pm2_5: 9.8,
+              },
+              hourly: {
+                time: times,
+                us_aqi: times.map((_, idx) => (idx === 25 ? 150 : 42)), // hour 25 is smoky (AQI 150)
+              },
+            }),
+          } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            timezone: 'Asia/Tokyo',
+            utc_offset_seconds: 32400,
+            current: {
+              temperature_2m: 24,
+              apparent_temperature: 25,
+              relative_humidity_2m: 55,
+              is_day: 1,
+              weather_code: 95, // Thunderstorm -> triggers severe alert
+              wind_speed_10m: 18,
+              surface_pressure: 1015,
+              uv_index: 6,
+            },
+            hourly: {
+              time: times,
+              surface_pressure: pressures,
+              temperature_2m: temps,
+              relative_humidity_2m: humids,
+              wind_speed_10m: Array(48).fill(15),
+              precipitation_probability: Array(48).fill(10),
+              weather_code: Array(48).fill(1),
+              is_day: Array(48).fill(1),
+              precipitation: Array(48).fill(0),
+              uv_index: times.map((_, idx) => (idx === 26 ? 9 : 4)), // hour 26 has extreme UV (9)
+            },
+            daily: {
+              time: ['2026-10-15', '2026-10-16', '2026-10-17'],
+              temperature_2m_max: [20, 26, 24],
+              temperature_2m_min: [12, 16, 15],
+              weather_code: [1, 95, 2],
+              precipitation_probability_max: [10, 80, 20],
+              sunrise: ['2026-10-15T06:00', '2026-10-16T06:01', '2026-10-17T06:02'],
+              sunset: ['2026-10-15T18:00', '2026-10-16T17:59', '2026-10-17T17:58'],
+            },
+          }),
+        } as Response;
+      });
 
       const data = await fetchWeather(MOCK_LOCATION);
       expect(data.source).toBe('Open-Meteo');
@@ -329,6 +349,9 @@ describe('weatherService - Unit Tests', () => {
       expect(data.utcOffsetSeconds).toBe(32400);
       expect(data.current.tempC).toBe(24);
       expect(data.current.tempF).toBe(75);
+      expect(data.current.uvIndex).toBe(6);
+      expect(data.current.aqi).toBe(42);
+      expect(data.current.pm25).toBe(9.8);
       expect(data.current.pressureTrend).toBe('rising');
       expect(data.current.pressureDeltaHpa).toBe(3);
       expect(data.yesterdayComparison?.isWarmer).toBe(true);
@@ -338,6 +361,10 @@ describe('weatherService - Unit Tests', () => {
       expect(data.alerts?.[0].title).toBe('Severe Thunderstorm Warning');
       expect(data.hourly).toHaveLength(24);
       expect(data.hourly[0].isActivityOptimal).toBe(true);
+      // Hour 1 (idx 25) has AQI 150 (> 100 default maxAqi) -> not optimal
+      expect(data.hourly[1].isActivityOptimal).toBe(false);
+      // Hour 2 (idx 26) has UV 9 (> 7 default maxUvIndex) -> not optimal
+      expect(data.hourly[2].isActivityOptimal).toBe(false);
       expect(data.daily[0].hourly).toBeDefined();
       expect(data.daily[0].hourly?.length).toBeGreaterThan(0);
     });

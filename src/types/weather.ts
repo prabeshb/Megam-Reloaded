@@ -54,6 +54,8 @@ export interface CurrentWeather {
   sunrise: string;
   sunset: string;
   uvIndex?: number;
+  aqi?: number;
+  pm25?: number;
   surfacePressure: number;
   pressureTrend: PressureTrend;
   pressureDeltaHpa: number;
@@ -70,6 +72,7 @@ export interface HourlyForecast {
   isDay: boolean;
   windSpeedKmh?: number;
   uvIndex?: number;
+  aqi?: number;
   isActivityOptimal?: boolean;
 }
 
@@ -132,6 +135,8 @@ export interface ActivityPreferences {
   maxTempC: number;
   maxWindKmh: number;
   maxPopPercent: number;
+  maxAqi?: number;
+  maxUvIndex?: number;
 }
 
 export interface AppSettings {

@@ -37,6 +37,9 @@ const MOCK_WEATHER_DATA: WeatherData = {
     surfacePressure: 1018,
     pressureTrend: 'rising',
     pressureDeltaHpa: 1.8,
+    uvIndex: 6,
+    aqi: 38,
+    pm25: 8.4,
   },
   hourly: [
     {
@@ -226,7 +229,7 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('Live Radar Nowcast')).toBeInTheDocument();
   });
 
-  it('renders QuickMetricsGrid with dual wind speed and pressure trend arrow', () => {
+  it('renders QuickMetricsGrid with dual wind speed, pressure trend arrow, UV Index badge, and Air Quality (AQI) card', () => {
     render(<QuickMetricsGrid current={MOCK_WEATHER_DATA.current} />);
     expect(screen.getByText('68%')).toBeInTheDocument();
     expect(screen.getByText(/16 km\/h/)).toBeInTheDocument();
@@ -234,6 +237,11 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('6:15 AM / 7:45 PM')).toBeInTheDocument();
     expect(screen.getByText(/1018 hPa/)).toBeInTheDocument();
     expect(screen.getByText('↗')).toBeInTheDocument();
+    expect(screen.getByText('UV Index')).toBeInTheDocument();
+    expect(screen.getByText('High')).toBeInTheDocument();
+    expect(screen.getByText('Air Quality')).toBeInTheDocument();
+    expect(screen.getByText(/38 AQI/)).toBeInTheDocument();
+    expect(screen.getByText('Good')).toBeInTheDocument();
   });
 
   it('renders HourlyForecast with optimal activity window indicator', () => {

@@ -11,6 +11,7 @@ const MOCK_OPEN_METEO_PAYLOAD = {
     weather_code: 1,
     wind_speed_10m: 15,
     surface_pressure: 1017,
+    uv_index: 5,
   },
   minutely_15: {
     time: Array.from({ length: 8 }, (_, i) => {
@@ -66,6 +67,23 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
       });
     });
 
+    await page.route('**/air-quality-api.open-meteo.com/v1/air-quality**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          current: {
+            us_aqi: 34,
+            pm2_5: 7.2,
+          },
+          hourly: {
+            time: MOCK_OPEN_METEO_PAYLOAD.hourly.time,
+            us_aqi: Array(192).fill(34),
+          },
+        }),
+      });
+    });
+
     await page.route('**/geocoding-api.open-meteo.com/v1/search**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -108,12 +126,15 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await expect(page.getByText('Live Radar Nowcast')).toBeVisible();
     await expect(page.getByText('Dry conditions expected for the next 60 minutes')).toBeVisible();
 
-    // Quick Metrics Grid (Humidity, Dual Wind, Sunrise/Sunset, Barometric Pressure)
+    // Quick Metrics Grid (Humidity, Dual Wind, Sunrise/Sunset, Barometric Pressure, UV Index, Air Quality)
     await expect(page.getByText('Humidity')).toBeVisible();
     await expect(page.getByText('54%')).toBeVisible();
     await expect(page.getByText('Wind Speed')).toBeVisible();
     await expect(page.getByText(/15 km\/h/)).toBeVisible();
     await expect(page.getByText(/1017 hPa/)).toBeVisible();
+    await expect(page.getByText('UV Index')).toBeVisible();
+    await expect(page.getByText('Air Quality')).toBeVisible();
+    await expect(page.getByText(/34 AQI/)).toBeVisible();
 
     // Hourly Forecast & Activity Window Badge
     await expect(page.getByText('Hourly Forecast')).toBeVisible();

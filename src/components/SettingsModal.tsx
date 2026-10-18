@@ -260,6 +260,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="w-full accent-emerald-500 cursor-pointer"
                   />
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Air Quality</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxAqi ?? 100} AQI
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="Max AQI Threshold"
+                    min={25}
+                    max={200}
+                    step={25}
+                    value={settings.activityPreferences.maxAqi ?? 100}
+                    onChange={(e) => handleActivityChange('maxAqi', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max UV Index</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ UV {settings.activityPreferences.maxUvIndex ?? 7}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="Max UV Index Threshold"
+                    min={2}
+                    max={11}
+                    step={1}
+                    value={settings.activityPreferences.maxUvIndex ?? 7}
+                    onChange={(e) => handleActivityChange('maxUvIndex', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
           </div>
