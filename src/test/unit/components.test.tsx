@@ -11,6 +11,7 @@ import { DailyForecast } from '../../components/DailyForecast';
 import { SevereAlertBanner } from '../../components/SevereAlertBanner';
 import { WidgetPreviewModal } from '../../components/WidgetPreviewModal';
 import { SettingsModal } from '../../components/SettingsModal';
+import { WhatToWearStrip } from '../../components/WhatToWearStrip';
 import { WeatherData, AppSettings } from '../../types/weather';
 
 const MOCK_WEATHER_DATA: WeatherData = {
@@ -36,6 +37,9 @@ const MOCK_WEATHER_DATA: WeatherData = {
     surfacePressure: 1018,
     pressureTrend: 'rising',
     pressureDeltaHpa: 1.8,
+    uvIndex: 6,
+    aqi: 38,
+    pm25: 8.4,
   },
   hourly: [
     {
@@ -91,6 +95,32 @@ const MOCK_WEATHER_DATA: WeatherData = {
       popPercent: 70,
       sunrise: '6:17 AM',
       sunset: '7:43 PM',
+      hourly: [
+        {
+          time: '2026-10-17T09:00',
+          hourLabel: '9 AM',
+          tempC: 15,
+          tempF: 59,
+          condition: 'Light drizzle',
+          conditionCode: 51,
+          popPercent: 40,
+          isDay: true,
+          windSpeedKmh: 12,
+          isActivityOptimal: false,
+        },
+        {
+          time: '2026-10-17T14:00',
+          hourLabel: '2 PM',
+          tempC: 19,
+          tempF: 66,
+          condition: 'Mainly clear',
+          conditionCode: 1,
+          popPercent: 10,
+          isDay: true,
+          windSpeedKmh: 10,
+          isActivityOptimal: true,
+        },
+      ],
     },
   ],
   yesterdayComparison: {
@@ -143,10 +173,13 @@ describe('UI Components - Unit Tests', () => {
         onOpenSearch={onOpenSearch}
         isFavorite={false}
         onToggleFavorite={onToggleFavorite}
+        timezone="Europe/London"
+        utcOffsetSeconds={3600}
       />
     );
 
     expect(screen.getByText('London')).toBeInTheDocument();
+    expect(screen.getByText(/Local time ·/)).toBeInTheDocument();
     expect(screen.getByText('18°C')).toBeInTheDocument();
     expect(screen.getByText('64°F')).toBeInTheDocument();
     expect(screen.getByText(/Feels like 17°C/)).toBeInTheDocument();
@@ -180,15 +213,23 @@ describe('UI Components - Unit Tests', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders NextHourRainBar with 12 5-minute bars and intensity legend', () => {
-    render(<NextHourRainBar rainData={MOCK_WEATHER_DATA.nextHourRain} />);
+  it('renders NextHourRainBar with 12 5-minute bars, intensity legend, and Live Radar Nowcast vs Hourly Trend Estimate badge', () => {
+    const { rerender } = render(<NextHourRainBar rainData={MOCK_WEATHER_DATA.nextHourRain} />);
     expect(screen.getByText('Next 60 Minutes')).toBeInTheDocument();
+    expect(screen.getByText('Hourly Trend Estimate')).toBeInTheDocument();
     expect(screen.getByText('Light precipitation expected in ~15 minutes')).toBeInTheDocument();
     expect(screen.getByText('Light')).toBeInTheDocument();
     expect(screen.getByText('Heavy')).toBeInTheDocument();
+
+    rerender(
+      <NextHourRainBar
+        rainData={{ ...MOCK_WEATHER_DATA.nextHourRain!, isLiveNowcast: true }}
+      />
+    );
+    expect(screen.getByText('Live Radar Nowcast')).toBeInTheDocument();
   });
 
-  it('renders QuickMetricsGrid with dual wind speed and pressure trend arrow', () => {
+  it('renders QuickMetricsGrid with dual wind speed, pressure trend arrow, UV Index badge, and Air Quality (AQI) card', () => {
     render(<QuickMetricsGrid current={MOCK_WEATHER_DATA.current} />);
     expect(screen.getByText('68%')).toBeInTheDocument();
     expect(screen.getByText(/16 km\/h/)).toBeInTheDocument();
@@ -196,6 +237,11 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('6:15 AM / 7:45 PM')).toBeInTheDocument();
     expect(screen.getByText(/1018 hPa/)).toBeInTheDocument();
     expect(screen.getByText('↗')).toBeInTheDocument();
+    expect(screen.getByText('UV Index')).toBeInTheDocument();
+    expect(screen.getByText('High')).toBeInTheDocument();
+    expect(screen.getByText('Air Quality')).toBeInTheDocument();
+    expect(screen.getByText(/38 AQI/)).toBeInTheDocument();
+    expect(screen.getByText('Good')).toBeInTheDocument();
   });
 
   it('renders HourlyForecast with optimal activity window indicator', () => {
@@ -231,13 +277,23 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('Evening Blue')).toBeInTheDocument();
   });
 
-  it('renders DailyForecast with dual-unit highs and lows', () => {
+  it('renders DailyForecast with dual-unit highs and lows and expands a day row to show its horizontal hourly strip', () => {
     render(<DailyForecast daily={MOCK_WEATHER_DATA.daily} primaryUnit="C" />);
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('Sat')).toBeInTheDocument();
     expect(screen.getByText('20°C')).toBeInTheDocument();
     expect(screen.getByText('· 68°F')).toBeInTheDocument();
     expect(screen.getByText('70%')).toBeInTheDocument();
+
+    // Tap 'Sat' row to expand its 24-hour forecast strip
+    fireEvent.click(screen.getByText('Sat'));
+    expect(screen.getByText('9 AM')).toBeInTheDocument();
+    expect(screen.getByText('2 PM')).toBeInTheDocument();
+    expect(screen.getByText('40%')).toBeInTheDocument();
+
+    // Tap 'Sat' again to collapse
+    fireEvent.click(screen.getByText('Sat'));
+    expect(screen.queryByText('9 AM')).not.toBeInTheDocument();
   });
 
   it('expands and dismisses SevereAlertBanner', () => {
@@ -268,5 +324,147 @@ describe('UI Components - Unit Tests', () => {
     fireEvent.click(screen.getByText('2 × 2 Square Glance'));
     expect(screen.getByText('H: 20°')).toBeInTheDocument();
     expect(screen.getByText('L: 11°')).toBeInTheDocument();
+  });
+
+  it('converts Activity Window temperature thresholds between °C and °F and provides interactive wind/rain sliders in SettingsModal', () => {
+    const onUpdateSettings = vi.fn();
+    const baseSettings: AppSettings = {
+      theme: 'system',
+      primaryUnit: 'F',
+      severeAlertsEnabled: true,
+      autoRefreshEnabled: false,
+      autoRefreshIntervalMinutes: 30,
+      openWeatherMapKey: '',
+      activityPreferences: {
+        activityType: 'run',
+        minTempC: 12,
+        maxTempC: 24,
+        maxWindKmh: 25,
+        maxPopPercent: 20,
+      },
+    };
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        onClose={vi.fn()}
+        settings={baseSettings}
+        onUpdateSettings={onUpdateSettings}
+      />
+    );
+
+    // When primaryUnit is 'F', minTempC=12 -> 54°F and maxTempC=24 -> 75°F
+    const minTempInput = screen.getByLabelText('Min Ideal Temp') as HTMLInputElement;
+    const maxTempInput = screen.getByLabelText('Max Ideal Temp') as HTMLInputElement;
+    expect(minTempInput.value).toBe('54');
+    expect(maxTempInput.value).toBe('75');
+
+    // Editing minTemp in °F (e.g. 68°F) converts back to 20°C in settings
+    fireEvent.change(minTempInput, { target: { value: '68' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          minTempC: 20,
+        }),
+      })
+    );
+
+    // Interactive Max Wind slider shows dual km/h · mph and updates maxWindKmh
+    expect(screen.getByText(/25 km\/h · 15\.5 mph/)).toBeInTheDocument();
+    const windSlider = screen.getByLabelText('Max Wind Threshold') as HTMLInputElement;
+    fireEvent.change(windSlider, { target: { value: '35' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          maxWindKmh: 35,
+        }),
+      })
+    );
+
+    // Interactive Max Rain slider updates maxPopPercent
+    const rainSlider = screen.getByLabelText('Max Rain Probability Threshold') as HTMLInputElement;
+    fireEvent.change(rainSlider, { target: { value: '40' } });
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activityPreferences: expect.objectContaining({
+          maxPopPercent: 40,
+        }),
+      })
+    );
+
+    // Neighborhood-Only GPS Privacy Fuzzing toggle
+    expect(screen.getByText(/Neighborhood-Only GPS/)).toBeInTheDocument();
+    const fuzzToggle = screen.getByLabelText('Toggle coordinate privacy fuzzing');
+    fireEvent.click(fuzzToggle);
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coordinatePrivacyFuzzing: false,
+      })
+    );
+
+    // Zero-Cloud Backup Export & Import
+    expect(screen.getByText('Zero-Cloud Backup & Portability')).toBeInTheDocument();
+    const importInput = screen.getByLabelText('Backup JSON or Base64 string');
+    const samplePayload = JSON.stringify({
+      version: 1,
+      settings: { ...baseSettings, primaryUnit: 'C' },
+      favorites: [{ id: 'fav_1', name: 'Rome', country: 'Italy', lat: 41.9, lon: 12.5, addedAt: 1 }],
+    });
+    fireEvent.change(importInput, { target: { value: samplePayload } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import Configuration' }));
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        primaryUnit: 'C',
+      })
+    );
+  });
+
+  it('evaluates next 6 hours in WhatToWearStrip for umbrella, jacket layering, UV protection, and wind/comfort chips', () => {
+    render(
+      <WhatToWearStrip
+        current={{ ...MOCK_WEATHER_DATA.current, tempC: 20, tempF: 68, uvIndex: 7 }}
+        hourly={[
+          {
+            time: '2026-10-16T13:00',
+            hourLabel: '1 PM',
+            tempC: 20,
+            tempF: 68,
+            condition: 'Clear sky',
+            conditionCode: 0,
+            popPercent: 10,
+            isDay: true,
+            windSpeedKmh: 15,
+            uvIndex: 7,
+          },
+          {
+            time: '2026-10-16T15:00',
+            hourLabel: '3 PM',
+            tempC: 18,
+            tempF: 64,
+            condition: 'Rain',
+            conditionCode: 61,
+            popPercent: 60,
+            isDay: true,
+            windSpeedKmh: 20,
+          },
+          {
+            time: '2026-10-16T18:00',
+            hourLabel: '6 PM',
+            tempC: 11,
+            tempF: 52,
+            condition: 'Mainly clear',
+            conditionCode: 1,
+            popPercent: 5,
+            isDay: false,
+            windSpeedKmh: 12,
+          },
+        ]}
+        primaryUnit="C"
+      />
+    );
+
+    expect(screen.getByText(/Bring an umbrella \(Rain likely at 3 PM\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Light jacket \(Drops to 11°C \/ 52°F/)).toBeInTheDocument();
+    expect(screen.getByText(/Sunglasses & SPF/)).toBeInTheDocument();
   });
 });

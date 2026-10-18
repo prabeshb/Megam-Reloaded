@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { AppSettings, ThemeOption, PrimaryUnit } from '../types/weather';
+import { AppSettings, ThemeOption, PrimaryUnit, FavoriteLocation } from '../types/weather';
+import {
+  cToF,
+  fToC,
+  kmhToMph,
+  getSavedFavorites,
+  saveFavorites,
+  exportAppConfiguration,
+  parseImportedConfiguration,
+} from '../services/weatherService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { APP_VERSION, APP_BUILD } from '../version';
 import {
@@ -13,9 +22,10 @@ import {
   ShieldCheck,
   Database,
   Download,
+  Upload,
+  Copy,
   Check,
   Activity,
-  Sliders,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -23,6 +33,8 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: AppSettings;
   onUpdateSettings: (newSettings: AppSettings) => void;
+  favorites?: FavoriteLocation[];
+  onUpdateFavorites?: (newFavorites: FavoriteLocation[]) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -30,13 +42,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  favorites,
+  onUpdateFavorites,
 }) => {
   const [apiKeyInput, setApiKeyInput] = useState(settings.openWeatherMapKey || '');
   const [keySavedStatus, setKeySavedStatus] = useState<string | null>(null);
+  const [backupInput, setBackupInput] = useState('');
+  const [backupStatus, setBackupStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(
+    null
+  );
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleExportConfig = async () => {
+    const activeFavs = favorites || getSavedFavorites();
+    const jsonStr = exportAppConfiguration(settings, activeFavs);
+    setBackupInput(jsonStr);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(jsonStr);
+      }
+    } catch {
+      // Clipboard optional in non-secure or headless contexts
+    }
+    try {
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'megam-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Ignore blob download errors in JSDOM
+    }
+    setBackupStatus({
+      type: 'success',
+      text: 'Configuration exported (megam-backup.json & copied)!',
+    });
+    setTimeout(() => setBackupStatus(null), 3000);
+  };
+
+  const handleImportConfig = () => {
+    try {
+      const parsed = parseImportedConfiguration(backupInput);
+      onUpdateSettings(parsed.settings);
+      saveFavorites(parsed.favorites);
+      if (onUpdateFavorites) {
+        onUpdateFavorites(parsed.favorites);
+      }
+      setBackupStatus({
+        type: 'success',
+        text: `Imported ${parsed.favorites.length} favorite cities & preferences!`,
+      });
+      setTimeout(() => setBackupStatus(null), 3000);
+    } catch (err: any) {
+      setBackupStatus({
+        type: 'error',
+        text: err?.message || 'Invalid backup configuration.',
+      });
+    }
+  };
 
   const handleThemeChange = (theme: ThemeOption) => {
     onUpdateSettings({ ...settings, theme });
@@ -178,39 +248,124 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* Threshold controls */}
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="space-y-3 text-[11px]">
               <div>
                 <label className="text-slate-500 dark:text-slate-400 block mb-1">
                   Ideal Temp ({settings.primaryUnit === 'C' ? '°C' : '°F'})
                 </label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
-                    value={settings.activityPreferences.minTempC}
-                    onChange={(e) => handleActivityChange('minTempC', Number(e.target.value))}
-                    className="w-14 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
+                    aria-label="Min Ideal Temp"
+                    value={
+                      settings.primaryUnit === 'C'
+                        ? settings.activityPreferences.minTempC
+                        : cToF(settings.activityPreferences.minTempC)
+                    }
+                    onChange={(e) => {
+                      const rawVal = Number(e.target.value);
+                      const valC = settings.primaryUnit === 'C' ? rawVal : fToC(rawVal);
+                      handleActivityChange('minTempC', valC);
+                    }}
+                    className="w-16 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
                   />
-                  <span>to</span>
+                  <span className="text-slate-500">to</span>
                   <input
                     type="number"
-                    value={settings.activityPreferences.maxTempC}
-                    onChange={(e) => handleActivityChange('maxTempC', Number(e.target.value))}
-                    className="w-14 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
+                    aria-label="Max Ideal Temp"
+                    value={
+                      settings.primaryUnit === 'C'
+                        ? settings.activityPreferences.maxTempC
+                        : cToF(settings.activityPreferences.maxTempC)
+                    }
+                    onChange={(e) => {
+                      const rawVal = Number(e.target.value);
+                      const valC = settings.primaryUnit === 'C' ? rawVal : fToC(rawVal);
+                      handleActivityChange('maxTempC', valC);
+                    }}
+                    className="w-16 h-8 px-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-semibold text-xs text-slate-800 dark:text-white"
                   />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+                    ({settings.activityPreferences.minTempC}°C–{settings.activityPreferences.maxTempC}°C · {cToF(settings.activityPreferences.minTempC)}°F–{cToF(settings.activityPreferences.maxTempC)}°F)
+                  </span>
                 </div>
               </div>
 
-              <div>
-                <label className="text-slate-500 dark:text-slate-400 block mb-1">
-                  Max Wind & Rain
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="text-[11px] text-slate-700 dark:text-slate-300">
-                    ≤ {settings.activityPreferences.maxWindKmh} km/h
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Wind</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxWindKmh} km/h · {kmhToMph(settings.activityPreferences.maxWindKmh)} mph
+                    </span>
                   </div>
-                  <div className="text-[11px] text-slate-700 dark:text-slate-300">
-                    ≤ {settings.activityPreferences.maxPopPercent}% rain
+                  <input
+                    type="range"
+                    aria-label="Max Wind Threshold"
+                    min={5}
+                    max={60}
+                    step={5}
+                    value={settings.activityPreferences.maxWindKmh}
+                    onChange={(e) => handleActivityChange('maxWindKmh', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Rain</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxPopPercent}% rain
+                    </span>
                   </div>
+                  <input
+                    type="range"
+                    aria-label="Max Rain Probability Threshold"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={settings.activityPreferences.maxPopPercent}
+                    onChange={(e) => handleActivityChange('maxPopPercent', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max Air Quality</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ {settings.activityPreferences.maxAqi ?? 100} AQI
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="Max AQI Threshold"
+                    min={25}
+                    max={200}
+                    step={25}
+                    value={settings.activityPreferences.maxAqi ?? 100}
+                    onChange={(e) => handleActivityChange('maxAqi', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-500 dark:text-slate-400">Max UV Index</label>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+                      ≤ UV {settings.activityPreferences.maxUvIndex ?? 7}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="Max UV Index Threshold"
+                    min={2}
+                    max={11}
+                    step={1}
+                    value={settings.activityPreferences.maxUvIndex ?? 7}
+                    onChange={(e) => handleActivityChange('maxUvIndex', Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer"
+                  />
                 </div>
               </div>
             </div>
@@ -397,6 +552,106 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ) : null}
             </div>
           )}
+
+          {/* On-Device Coordinate Privacy Fuzzing ("Neighborhood-Only GPS" Mode) */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                      Neighborhood-Only GPS (~1.1 km)
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold">
+                      Privacy Shield
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Rounds GPS to 2 decimal places on-device so exact street coordinates never leave your phone
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  onUpdateSettings({
+                    ...settings,
+                    coordinatePrivacyFuzzing: settings.coordinatePrivacyFuzzing === false,
+                  })
+                }
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                  settings.coordinatePrivacyFuzzing !== false
+                    ? 'bg-emerald-500'
+                    : 'bg-slate-300 dark:bg-slate-700'
+                }`}
+                aria-label="Toggle coordinate privacy fuzzing"
+              >
+                <div
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                    settings.coordinatePrivacyFuzzing !== false ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Zero-Cloud Favorites & Settings Backup (Import / Export / Share) */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Copy size={15} className="text-sky-500" />
+              <div>
+                <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                  Zero-Cloud Backup & Portability
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Export or import your favorite cities, activity rules, and settings offline
+                </div>
+              </div>
+            </div>
+
+            <textarea
+              aria-label="Backup JSON or Base64 string"
+              value={backupInput}
+              onChange={(e) => setBackupInput(e.target.value)}
+              placeholder="Paste exported JSON or Base64 backup string here, or tap Export below..."
+              rows={2}
+              className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleExportConfig}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
+              >
+                <Download size={13} />
+                <span>Export Configuration</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleImportConfig}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold transition-colors"
+              >
+                <Upload size={13} />
+                <span>Import Configuration</span>
+              </button>
+            </div>
+
+            {backupStatus && (
+              <div
+                className={`flex items-center gap-1 text-[11px] font-medium ${
+                  backupStatus.type === 'success'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {backupStatus.type === 'success' && <Check size={13} />}
+                <span>{backupStatus.text}</span>
+              </div>
+            )}
+          </div>
 
           {/* Data Source & Privacy Transparency */}
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5">

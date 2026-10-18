@@ -20,8 +20,17 @@ export function cToF(c: number): number {
   return Math.round((c * 9) / 5 + 32);
 }
 
+export function fToC(f: number): number {
+  return Math.round(((f - 32) * 5) / 9);
+}
+
 export function kmhToMph(kmh: number): number {
   return Math.round(kmh * 0.621371 * 10) / 10;
+}
+
+export function fuzzCoordinate(coord: number, enabled: boolean = true): number {
+  if (!enabled) return coord;
+  return Math.round(coord * 100) / 100;
 }
 
 export function formatStaleness(fetchedAt: number): string {
@@ -138,7 +147,68 @@ export function calculateAstronomicalWindows(sunriseIso: string, sunsetIso: stri
 }
 
 // 60-Minute Rain Bar (Next-Hour Nowcasting) Generator
-export function calculateNextHourRain(currentCode: number, hourlyPop: number, hourlyPrecipMm: number = 0): NextHourPrecipitation {
+export function calculateNextHourRain(
+  currentCode: number,
+  hourlyPop: number,
+  hourlyPrecipMm: number = 0,
+  minutely15PrecipMm?: number[]
+): NextHourPrecipitation {
+  const hasRealMinutely =
+    Array.isArray(minutely15PrecipMm) &&
+    minutely15PrecipMm.length >= 4 &&
+    minutely15PrecipMm.slice(0, 4).every((v) => typeof v === 'number' && !isNaN(v));
+
+  if (hasRealMinutely && minutely15PrecipMm) {
+    const pts = [
+      minutely15PrecipMm[0],
+      minutely15PrecipMm[1],
+      minutely15PrecipMm[2],
+      minutely15PrecipMm[3],
+      minutely15PrecipMm[4] ?? minutely15PrecipMm[3],
+    ];
+    const minuteBars: MinuteRainBar[] = [];
+
+    for (let m = 0; m < 60; m += 5) {
+      const segIdx = Math.floor(m / 15);
+      const frac = (m % 15) / 15;
+      const startVal = pts[segIdx] ?? 0;
+      const endVal = pts[segIdx + 1] ?? startVal;
+      const interpolated = startVal + (endVal - startVal) * frac;
+      const intensityMm = Math.max(0, Number(interpolated.toFixed(1)));
+
+      let level: 'none' | 'light' | 'moderate' | 'heavy' = 'none';
+      if (intensityMm >= 4.0) level = 'heavy';
+      else if (intensityMm >= 1.5) level = 'moderate';
+      else if (intensityMm > 0.0) level = 'light';
+      else level = 'none';
+
+      minuteBars.push({ minute: m, intensityMm, level });
+    }
+
+    const hasRain = minuteBars.some((b) => b.intensityMm > 0);
+    let summaryText = 'Dry conditions expected for the next 60 minutes';
+    if (hasRain) {
+      if (minuteBars[0].intensityMm > 0) {
+        const isHeavy = minuteBars.some((b) => b.level === 'heavy');
+        summaryText = isHeavy
+          ? 'Heavy rain continuing over the next hour'
+          : 'Light to moderate rain for the next 45+ mins';
+      } else {
+        const firstRain = minuteBars.find((b) => b.intensityMm > 0);
+        if (firstRain) {
+          summaryText = `Light precipitation expected in ~${firstRain.minute} minutes`;
+        }
+      }
+    }
+
+    return {
+      hasRain,
+      summaryText,
+      minuteBars,
+      isLiveNowcast: true,
+    };
+  }
+
   const isRainingNow = (currentCode >= 51 && currentCode <= 67) || (currentCode >= 80 && currentCode <= 82) || currentCode >= 95;
   const hasChance = isRainingNow || hourlyPop >= 25 || hourlyPrecipMm > 0.1;
 
@@ -185,6 +255,7 @@ export function calculateNextHourRain(currentCode: number, hourlyPop: number, ho
     hasRain: hasChance,
     summaryText,
     minuteBars,
+    isLiveNowcast: false,
   };
 }
 
@@ -283,13 +354,19 @@ export async function fetchWeather(
     }
   }
 
-  // Primary: Open-Meteo with past_days=1 for high-accuracy yesterday comparison
+  // Primary: Open-Meteo with past_days=1 for high-accuracy yesterday comparison + parallel Air Quality API
   if (isOnline) {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,surface_pressure&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m,surface_pressure&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&past_days=1&timezone=auto`;
-      const res = await fetch(url);
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,surface_pressure,uv_index&minutely_15=precipitation&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m,surface_pressure,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max&past_days=1&timezone=auto`;
+      const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${location.lat}&longitude=${location.lon}&current=us_aqi,pm2_5&hourly=us_aqi,pm2_5&past_days=1&timezone=auto`;
+
+      const [res, aqiRes] = await Promise.all([
+        fetch(url),
+        fetch(aqiUrl).catch(() => null),
+      ]);
       if (!res.ok) throw new Error(`Open-Meteo returned status ${res.status}`);
       const raw = await res.json();
+      const aqiRaw = aqiRes && aqiRes.ok ? await aqiRes.json().catch(() => null) : null;
 
       const currentCode = raw.current?.weather_code ?? 0;
       const isDay = raw.current?.is_day === 1;
@@ -310,11 +387,27 @@ export async function fetchWeather(
       const hourlyCodes: number[] = raw.hourly?.weather_code || [];
       const hourlyDays: number[] = raw.hourly?.is_day || [];
       const hourlyPrecip: number[] = raw.hourly?.precipitation || [];
+      const hourlyUvs: number[] = raw.hourly?.uv_index || [];
+      const hourlyAqis: number[] = aqiRaw?.hourly?.us_aqi || [];
 
       // Find current hour index
       const nowIsoHour = new Date().toISOString().slice(0, 13);
       let nowIdx = times.findIndex((t: string) => t.startsWith(nowIsoHour));
       if (nowIdx === -1) nowIdx = 24; // with past_days=1, index 24 is today at 00:00
+
+      const currentUv = Math.round(
+        raw.current?.uv_index ?? hourlyUvs[nowIdx] ?? raw.daily?.uv_index_max?.[1] ?? 0
+      );
+      const currentAqi =
+        aqiRaw?.current?.us_aqi !== undefined
+          ? Math.round(aqiRaw.current.us_aqi)
+          : hourlyAqis[nowIdx] !== undefined
+          ? Math.round(hourlyAqis[nowIdx])
+          : undefined;
+      const currentPm25 =
+        aqiRaw?.current?.pm2_5 !== undefined
+          ? Number(Number(aqiRaw.current.pm2_5).toFixed(1))
+          : undefined;
 
       // Pressure Trend: compare now with index 3 hours prior
       let pressureDeltaHpa = 0;
@@ -356,6 +449,64 @@ export async function fetchWeather(
         };
       }
 
+      // Activity Window matching preferences
+      const defaultPrefs: ActivityPreferences = activityPrefs || {
+        activityType: 'run',
+        minTempC: 12,
+        maxTempC: 24,
+        maxWindKmh: 25,
+        maxPopPercent: 20,
+        maxAqi: 100,
+        maxUvIndex: 7,
+      };
+      const maxAqiThreshold = defaultPrefs.maxAqi ?? 100;
+      const maxUvThreshold = defaultPrefs.maxUvIndex ?? 7;
+
+      const buildHourlyItem = (i: number, isNowLabel: boolean): HourlyForecast => {
+        const timeIso = times[i];
+        const dt = new Date(timeIso);
+        const hourLabel = isNowLabel
+          ? 'Now'
+          : dt.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+        const hTempC = Math.round(hourlyTemps[i] ?? 20);
+        const hWind = Math.round(hourlyWinds[i] ?? 10);
+        const hPop = Math.round(hourlyPops[i] ?? 0);
+        const hCode = hourlyCodes[i] ?? 0;
+        const hIsDay = hourlyDays[i] === 1;
+        const hUv = hourlyUvs[i] !== undefined ? Math.round(hourlyUvs[i]) : undefined;
+        const hAqi =
+          hourlyAqis[i] !== undefined
+            ? Math.round(hourlyAqis[i])
+            : currentAqi;
+        const hMeta = getWmoConditionMeta(hCode, hIsDay);
+
+        const uvSafe = hUv === undefined || hUv <= maxUvThreshold;
+        const aqiSafe = hAqi === undefined || hAqi <= maxAqiThreshold;
+
+        const isOptimal =
+          hTempC >= defaultPrefs.minTempC &&
+          hTempC <= defaultPrefs.maxTempC &&
+          hWind <= defaultPrefs.maxWindKmh &&
+          hPop <= defaultPrefs.maxPopPercent &&
+          uvSafe &&
+          aqiSafe;
+
+        return {
+          time: timeIso,
+          hourLabel,
+          tempC: hTempC,
+          tempF: cToF(hTempC),
+          condition: hMeta.description,
+          conditionCode: hCode,
+          popPercent: hPop,
+          isDay: hIsDay,
+          windSpeedKmh: hWind,
+          uvIndex: hUv,
+          aqi: hAqi,
+          isActivityOptimal: isOptimal,
+        };
+      };
+
       // Daily Forecasts (skip index 0 which was yesterday)
       const dailyDays: DailyForecast[] = (raw.daily?.time || []).slice(1, 8).map((dateStr: string, idx: number) => {
         const actualIdx = idx + 1;
@@ -378,6 +529,14 @@ export async function fetchWeather(
             : dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         };
 
+        // Group matching hourly items for this specific date (up to 24 hours)
+        const dayHourly: HourlyForecast[] = [];
+        for (let i = 0; i < times.length; i++) {
+          if (times[i].startsWith(dateStr)) {
+            dayHourly.push(buildHourlyItem(i, false));
+          }
+        }
+
         return {
           date: dateStr,
           dayName,
@@ -391,50 +550,14 @@ export async function fetchWeather(
           popPercent: pop,
           sunrise: formatSunTime(sunriseIso),
           sunset: formatSunTime(sunsetIso),
+          hourly: dayHourly,
         };
       });
-
-      // Hourly items for next 24 hours + Activity Window matching
-      const defaultPrefs: ActivityPreferences = activityPrefs || {
-        activityType: 'run',
-        minTempC: 12,
-        maxTempC: 24,
-        maxWindKmh: 25,
-        maxPopPercent: 20,
-      };
 
       const hourlySliced: HourlyForecast[] = [];
       const startIdx = Math.max(0, nowIdx);
       for (let i = startIdx; i < startIdx + 24 && i < times.length; i++) {
-        const timeIso = times[i];
-        const dt = new Date(timeIso);
-        const isNow = i === startIdx;
-        const hourLabel = isNow ? 'Now' : dt.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
-        const hTempC = Math.round(hourlyTemps[i] ?? 20);
-        const hWind = Math.round(hourlyWinds[i] ?? 10);
-        const hPop = Math.round(hourlyPops[i] ?? 0);
-        const hCode = hourlyCodes[i] ?? 0;
-        const hIsDay = hourlyDays[i] === 1;
-        const hMeta = getWmoConditionMeta(hCode, hIsDay);
-
-        const isOptimal =
-          hTempC >= defaultPrefs.minTempC &&
-          hTempC <= defaultPrefs.maxTempC &&
-          hWind <= defaultPrefs.maxWindKmh &&
-          hPop <= defaultPrefs.maxPopPercent;
-
-        hourlySliced.push({
-          time: timeIso,
-          hourLabel,
-          tempC: hTempC,
-          tempF: cToF(hTempC),
-          condition: hMeta.description,
-          conditionCode: hCode,
-          popPercent: hPop,
-          isDay: hIsDay,
-          windSpeedKmh: hWind,
-          isActivityOptimal: isOptimal,
-        });
+        hourlySliced.push(buildHourlyItem(i, i === startIdx));
       }
 
       // Golden Hour & Blue Hour calculations
@@ -442,11 +565,21 @@ export async function fetchWeather(
       const todaySunsetIso = raw.daily?.sunset?.[1] || '';
       const astronomicalWindows = calculateAstronomicalWindows(todaySunriseIso, todaySunsetIso);
 
-      // Next-Hour Rain Nowcasting
+      // Next-Hour Rain Nowcasting (Real 15-minute data if returned by Open-Meteo)
+      let minutely15Slice: number[] | undefined;
+      const mTimes: string[] = raw.minutely_15?.time || [];
+      const mPrecip: number[] = raw.minutely_15?.precipitation || [];
+      if (mTimes.length >= 4 && mPrecip.length >= 4) {
+        let mIdx = mTimes.findIndex((t: string) => t.startsWith(nowIsoHour));
+        if (mIdx === -1) mIdx = 0;
+        minutely15Slice = mPrecip.slice(mIdx, mIdx + 5);
+      }
+
       const nextHourRain = calculateNextHourRain(
         currentCode,
         hourlyPops[startIdx] || 0,
-        hourlyPrecip[startIdx] || 0
+        hourlyPrecip[startIdx] || 0,
+        minutely15Slice
       );
 
       // Severe Weather Alerts
@@ -486,6 +619,9 @@ export async function fetchWeather(
           isDay,
           sunrise: dailyDays[0]?.sunrise || '6:15 AM',
           sunset: dailyDays[0]?.sunset || '7:45 PM',
+          uvIndex: currentUv,
+          aqi: currentAqi,
+          pm25: currentPm25,
           surfacePressure: currentPressure,
           pressureTrend,
           pressureDeltaHpa,
@@ -496,6 +632,8 @@ export async function fetchWeather(
         yesterdayComparison,
         nextHourRain,
         astronomicalWindows,
+        timezone: raw.timezone,
+        utcOffsetSeconds: raw.utc_offset_seconds,
         fetchedAt: Date.now(),
         source: 'Open-Meteo',
         isOfflineCached: false,
@@ -512,7 +650,9 @@ export async function fetchWeather(
   const cached = getCachedWeatherData(location.lat, location.lon);
   if (cached) return cached;
 
-  return generateSyntheticFallback(location, activityPrefs);
+  throw new Error(
+    `No offline cache available for ${location.name}. Connect to the internet to fetch the forecast.`
+  );
 }
 
 // OpenWeatherMap implementation
@@ -609,6 +749,7 @@ async function fetchFromOpenWeatherMap(
     ],
     nextHourRain: calculateNextHourRain(0, 10),
     astronomicalWindows: calculateAstronomicalWindows('', ''),
+    utcOffsetSeconds: currData.timezone,
     fetchedAt: Date.now(),
     source: 'OpenWeatherMap',
     isOfflineCached: false,
@@ -616,69 +757,6 @@ async function fetchFromOpenWeatherMap(
 
   saveWeatherDataToCache(weatherData);
   return weatherData;
-}
-
-function generateSyntheticFallback(location: LocationInfo, activityPrefs?: ActivityPreferences): WeatherData {
-  const tempC = 21;
-  const conditionMeta = getWmoConditionMeta(1, true);
-  return {
-    location,
-    current: {
-      tempC,
-      tempF: cToF(tempC),
-      feelsLikeC: 20,
-      feelsLikeF: cToF(20),
-      humidity: 56,
-      windSpeedKmh: 14,
-      windSpeedMph: kmhToMph(14),
-      condition: conditionMeta.description,
-      conditionCode: 1,
-      isDay: true,
-      sunrise: '6:32 AM',
-      sunset: '7:42 PM',
-      surfacePressure: 1016,
-      pressureTrend: 'rising',
-      pressureDeltaHpa: 1.2,
-    },
-    hourly: Array.from({ length: 12 }).map((_, idx) => ({
-      time: new Date(Date.now() + idx * 3600000).toISOString(),
-      hourLabel: idx === 0 ? 'Now' : `${(new Date().getHours() + idx) % 24}:00`,
-      tempC: tempC - (idx > 6 ? 2 : -1),
-      tempF: cToF(tempC - (idx > 6 ? 2 : -1)),
-      condition: 'Mainly clear',
-      conditionCode: 1,
-      popPercent: 5,
-      isDay: true,
-      windSpeedKmh: 12,
-      isActivityOptimal: true,
-    })),
-    daily: ['Today', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'].map((day, idx) => ({
-      date: new Date(Date.now() + idx * 86400000).toISOString().slice(0, 10),
-      dayName: day,
-      isToday: idx === 0,
-      maxTempC: 23 - (idx % 2),
-      maxTempF: cToF(23 - (idx % 2)),
-      minTempC: 13 + (idx % 2),
-      minTempF: cToF(13 + (idx % 2)),
-      condition: idx === 2 ? 'Scattered rain' : 'Mainly clear',
-      conditionCode: idx === 2 ? 61 : 1,
-      popPercent: idx === 2 ? 60 : 10,
-      sunrise: '6:32 AM',
-      sunset: '7:42 PM',
-    })),
-    yesterdayComparison: {
-      tempDiffC: -2,
-      tempDiffF: -4,
-      isWarmer: false,
-      humidityDiff: -5,
-      summaryText: '2°C (4°F) cooler and less humid than yesterday',
-    },
-    nextHourRain: calculateNextHourRain(1, 5),
-    astronomicalWindows: calculateAstronomicalWindows('', ''),
-    fetchedAt: Date.now(),
-    source: 'Offline Cache',
-    isOfflineCached: true,
-  };
 }
 
 // Favorites local persistence
@@ -715,12 +793,15 @@ export function getSavedSettings(): AppSettings {
     autoRefreshEnabled: false, // Default OFF per PRD
     autoRefreshIntervalMinutes: 30,
     openWeatherMapKey: '',
+    coordinatePrivacyFuzzing: true, // Default ON (~1.1 km neighborhood-only GPS fuzzing)
     activityPreferences: {
       activityType: 'run',
       minTempC: 12,
       maxTempC: 24,
       maxWindKmh: 25,
       maxPopPercent: 20,
+      maxAqi: 100,
+      maxUvIndex: 7,
     },
   };
 
@@ -747,4 +828,67 @@ export function saveSettings(settings: AppSettings): void {
   } catch (err) {
     console.warn('Failed to save settings', err);
   }
+}
+
+export interface MegamBackupPayload {
+  version: number;
+  exportedAt: number;
+  settings: AppSettings;
+  favorites: FavoriteLocation[];
+}
+
+export function exportAppConfiguration(
+  settings: AppSettings,
+  favorites: FavoriteLocation[]
+): string {
+  const payload: MegamBackupPayload = {
+    version: 1,
+    exportedAt: Date.now(),
+    settings,
+    favorites,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+export function parseImportedConfiguration(rawInput: string): {
+  settings: AppSettings;
+  favorites: FavoriteLocation[];
+} {
+  const trimmed = (rawInput || '').trim();
+  if (!trimmed) {
+    throw new Error('Backup string is empty');
+  }
+
+  let jsonStr = trimmed;
+  if (!trimmed.startsWith('{')) {
+    try {
+      jsonStr = decodeURIComponent(atob(trimmed));
+    } catch {
+      jsonStr = atob(trimmed);
+    }
+  }
+
+  const parsed = JSON.parse(jsonStr);
+  if (!parsed || typeof parsed !== 'object' || (!parsed.settings && !parsed.favorites)) {
+    throw new Error('Invalid backup format');
+  }
+
+  const defaults = getSavedSettings();
+  const mergedSettings: AppSettings = {
+    ...defaults,
+    ...(parsed.settings || {}),
+    activityPreferences: {
+      ...defaults.activityPreferences,
+      ...(parsed.settings?.activityPreferences || {}),
+    },
+  };
+
+  const mergedFavorites: FavoriteLocation[] = Array.isArray(parsed.favorites)
+    ? parsed.favorites
+    : getSavedFavorites();
+
+  return {
+    settings: mergedSettings,
+    favorites: mergedFavorites,
+  };
 }

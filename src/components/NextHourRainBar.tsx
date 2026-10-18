@@ -9,7 +9,7 @@ interface NextHourRainBarProps {
 export const NextHourRainBar: React.FC<NextHourRainBarProps> = ({ rainData }) => {
   if (!rainData) return null;
 
-  const { summaryText, minuteBars, hasRain } = rainData;
+  const { summaryText, minuteBars, hasRain, isLiveNowcast } = rainData;
 
   const getBarHeight = (intensityMm: number) => {
     if (intensityMm <= 0) return 'h-1.5 opacity-30';
@@ -41,16 +41,25 @@ export const NextHourRainBar: React.FC<NextHourRainBarProps> = ({ rainData }) =>
     >
       <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5">
             <CloudRain size={15} className="text-sky-500 shrink-0" />
             <span className="text-xs font-semibold text-slate-800 dark:text-white">
               Next 60 Minutes
             </span>
           </div>
-          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate text-right">
-            {summaryText}
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+              isLiveNowcast
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-300/60 dark:border-emerald-700/60'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            {isLiveNowcast ? 'Live Radar Nowcast' : 'Hourly Trend Estimate'}
           </span>
+        </div>
+        <div className="text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-2">
+          {summaryText}
         </div>
 
         {/* 60-Minute Bars */}

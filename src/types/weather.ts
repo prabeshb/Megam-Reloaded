@@ -28,6 +28,7 @@ export interface NextHourPrecipitation {
   hasRain: boolean;
   summaryText: string;
   minuteBars: MinuteRainBar[];
+  isLiveNowcast?: boolean;
 }
 
 export interface AstronomicalWindows {
@@ -53,6 +54,8 @@ export interface CurrentWeather {
   sunrise: string;
   sunset: string;
   uvIndex?: number;
+  aqi?: number;
+  pm25?: number;
   surfacePressure: number;
   pressureTrend: PressureTrend;
   pressureDeltaHpa: number;
@@ -68,6 +71,8 @@ export interface HourlyForecast {
   popPercent: number;
   isDay: boolean;
   windSpeedKmh?: number;
+  uvIndex?: number;
+  aqi?: number;
   isActivityOptimal?: boolean;
 }
 
@@ -84,6 +89,7 @@ export interface DailyForecast {
   popPercent: number;
   sunrise: string;
   sunset: string;
+  hourly?: HourlyForecast[];
 }
 
 export interface SevereAlert {
@@ -104,6 +110,8 @@ export interface WeatherData {
   yesterdayComparison?: YesterdayComparison;
   nextHourRain?: NextHourPrecipitation;
   astronomicalWindows?: AstronomicalWindows;
+  timezone?: string;
+  utcOffsetSeconds?: number;
   fetchedAt: number;
   source: 'Open-Meteo' | 'OpenWeatherMap' | 'Offline Cache';
   isOfflineCached?: boolean;
@@ -127,6 +135,8 @@ export interface ActivityPreferences {
   maxTempC: number;
   maxWindKmh: number;
   maxPopPercent: number;
+  maxAqi?: number;
+  maxUvIndex?: number;
 }
 
 export interface AppSettings {
@@ -136,6 +146,7 @@ export interface AppSettings {
   autoRefreshEnabled: boolean;
   autoRefreshIntervalMinutes: number;
   openWeatherMapKey: string;
+  coordinatePrivacyFuzzing?: boolean;
   activityPreferences: ActivityPreferences;
 }
 

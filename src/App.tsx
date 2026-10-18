@@ -19,6 +19,7 @@ import {
   reverseGeocode,
   getLastSavedLocation,
   getWmoConditionMeta,
+  fuzzCoordinate,
 } from './services/weatherService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { APP_VERSION, APP_BUILD } from './version';
@@ -27,6 +28,7 @@ import { WeatherHeader } from './components/WeatherHeader';
 import { LocationPagerIndicator } from './components/LocationPagerIndicator';
 import { YesterdayComparisonBanner } from './components/YesterdayComparisonBanner';
 import { CurrentWeatherHero } from './components/CurrentWeatherHero';
+import { WhatToWearStrip } from './components/WhatToWearStrip';
 import { NextHourRainBar } from './components/NextHourRainBar';
 import { QuickMetricsGrid } from './components/QuickMetricsGrid';
 import { HourlyForecast } from './components/HourlyForecast';
@@ -172,8 +174,18 @@ export default function App() {
         setWeatherData(data);
       } catch (err: any) {
         console.error('Failed to load weather:', err);
+        setWeatherData((prev) => {
+          if (
+            prev &&
+            Math.abs(prev.location.lat - loc.lat) < 0.05 &&
+            Math.abs(prev.location.lon - loc.lon) < 0.05
+          ) {
+            return prev;
+          }
+          return null;
+        });
         setErrorMessage(
-          err?.message || 'Unable to load weather forecast. Using cached data if available.'
+          err?.message || `No Offline Cache Available for ${loc.name}`
         );
       } finally {
         setIsLoading(false);
@@ -199,8 +211,9 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
+          const fuzzEnabled = settings.coordinatePrivacyFuzzing !== false;
+          const lat = fuzzCoordinate(pos.coords.latitude, fuzzEnabled);
+          const lon = fuzzCoordinate(pos.coords.longitude, fuzzEnabled);
           const geoInfo = await reverseGeocode(lat, lon);
           const detectedLoc: LocationInfo = {
             name: geoInfo.name,
@@ -226,7 +239,7 @@ export default function App() {
       },
       { timeout: 8000, enableHighAccuracy: false }
     );
-  }, [currentGpsLocation, activePageIndex, loadWeather]);
+  }, [currentGpsLocation, activePageIndex, loadWeather, settings.coordinatePrivacyFuzzing]);
 
   // Initial mount: load cached data instantly, then trigger async GPS
   useEffect(() => {
@@ -401,6 +414,15 @@ export default function App() {
                 onOpenSearch={() => setIsSearchOpen(true)}
                 isFavorite={isCurrentFavorite}
                 onToggleFavorite={handleToggleFavorite}
+                timezone={weatherData.timezone}
+                utcOffsetSeconds={weatherData.utcOffsetSeconds}
+              />
+
+              {/* "What to Wear / Bring" Contextual Recommendation Strip */}
+              <WhatToWearStrip
+                current={weatherData.current}
+                hourly={weatherData.hourly}
+                primaryUnit={settings.primaryUnit}
               />
 
               {/* 60-Minute Rain Bar Nowcasting (PRD v2 Value-Add Feature) */}
@@ -443,12 +465,12 @@ export default function App() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[460px] p-6 text-center">
-              <AlertCircle size={36} className="text-rose-500 mb-2" />
+              <WifiOff size={36} className="text-amber-500 mb-2" />
               <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
-                Unable to load weather
+                No Offline Cache Available for {activeLocation.name}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4 max-w-xs">
-                {errorMessage || 'Network connection failed. Please check your internet or search for a city.'}
+                {errorMessage || 'Connect to the internet to fetch and cache the forecast for this location.'}
               </p>
               <button
                 onClick={() => loadWeather(activeLocation, true)}
@@ -485,6 +507,11 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
+        favorites={favorites}
+        onUpdateFavorites={(newFavs) => {
+          setFavorites(newFavs);
+          saveFavorites(newFavs);
+        }}
       />
 
       <WidgetPreviewModal

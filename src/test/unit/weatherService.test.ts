@@ -3,6 +3,7 @@ import {
   cToF,
   fToC,
   kmhToMph,
+  fuzzCoordinate,
   formatStaleness,
   getWmoConditionMeta,
   calculateAstronomicalWindows,
@@ -18,6 +19,8 @@ import {
   saveFavorites,
   getSavedSettings,
   saveSettings,
+  exportAppConfiguration,
+  parseImportedConfiguration,
 } from '../../services/weatherService';
 import { LocationInfo, WeatherData } from '../../types/weather';
 
@@ -34,7 +37,7 @@ describe('weatherService - Unit Tests', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Unit Conversions (cToF, fToC & kmhToMph)', () => {
+  describe('Unit Conversions (cToF, fToC, kmhToMph & fuzzCoordinate)', () => {
     it('converts Celsius to Fahrenheit accurately', () => {
       expect(cToF(0)).toBe(32);
       expect(cToF(100)).toBe(212);
@@ -56,6 +59,12 @@ describe('weatherService - Unit Tests', () => {
       expect(kmhToMph(10)).toBe(6.2);
       expect(kmhToMph(25)).toBe(15.5);
       expect(kmhToMph(100)).toBe(62.1);
+    });
+
+    it('fuzzes GPS coordinates to 2 decimal places (~1.1 km resolution) when enabled', () => {
+      expect(fuzzCoordinate(37.774929, true)).toBe(37.77);
+      expect(fuzzCoordinate(-122.419416, true)).toBe(-122.42);
+      expect(fuzzCoordinate(37.774929, false)).toBe(37.774929);
     });
   });
 
@@ -153,8 +162,22 @@ describe('weatherService - Unit Tests', () => {
     it('generates approaching rain summary when currently dry but PoP >= 25%', () => {
       const result = calculateNextHourRain(2, 60, 0.5);
       expect(result.hasRain).toBe(true);
+      expect(result.isLiveNowcast).toBe(false);
       expect(result.summaryText).toMatch(/Light precipitation expected in ~\d+ minutes/);
       expect(result.minuteBars.some((b) => b.intensityMm > 0)).toBe(true);
+    });
+
+    it('interpolates real 15-minute minutely_15 precipitation into 5-minute bars and sets isLiveNowcast=true', () => {
+      const result = calculateNextHourRain(61, 80, 2.0, [0, 1.5, 3.0, 4.5, 1.2]);
+      expect(result.isLiveNowcast).toBe(true);
+      expect(result.hasRain).toBe(true);
+      expect(result.minuteBars).toHaveLength(12);
+      // 0m -> 0, 15m (idx 3) -> 1.5, 30m (idx 6) -> 3.0, 45m (idx 9) -> 4.5
+      expect(result.minuteBars[0].intensityMm).toBe(0);
+      expect(result.minuteBars[3].intensityMm).toBe(1.5);
+      expect(result.minuteBars[6].intensityMm).toBe(3);
+      expect(result.minuteBars[9].intensityMm).toBe(4.5);
+      expect(result.minuteBars[9].level).toBe('heavy');
     });
   });
 
@@ -217,12 +240,29 @@ describe('weatherService - Unit Tests', () => {
       expect(defaults.primaryUnit).toBe('C');
       expect(defaults.severeAlertsEnabled).toBe(true);
       expect(defaults.autoRefreshEnabled).toBe(false);
+      expect(defaults.coordinatePrivacyFuzzing).toBe(true);
       expect(defaults.activityPreferences.activityType).toBe('run');
 
       const updated = { ...defaults, primaryUnit: 'F' as const, theme: 'dark' as const };
       saveSettings(updated);
       expect(getSavedSettings().primaryUnit).toBe('F');
       expect(getSavedSettings().theme).toBe('dark');
+    });
+
+    it('exports and imports zero-cloud backup configuration (JSON and Base64)', () => {
+      const settings = { ...getSavedSettings(), primaryUnit: 'F' as const };
+      const favorites = [
+        { id: 'fav_sydney', name: 'Sydney', country: 'Australia', lat: -33.86, lon: 151.2, addedAt: 100 },
+      ];
+      const jsonStr = exportAppConfiguration(settings, favorites);
+      const parsedFromJson = parseImportedConfiguration(jsonStr);
+      expect(parsedFromJson.settings.primaryUnit).toBe('F');
+      expect(parsedFromJson.favorites).toHaveLength(1);
+      expect(parsedFromJson.favorites[0].name).toBe('Sydney');
+
+      const base64Str = btoa(encodeURIComponent(jsonStr));
+      const parsedFromBase64 = parseImportedConfiguration(base64Str);
+      expect(parsedFromBase64.favorites[0].name).toBe('Sydney');
     });
   });
 
@@ -272,45 +312,72 @@ describe('weatherService - Unit Tests', () => {
       const humids = Array(48).fill(50);
       humids[0] = 40; // +15% more humid
 
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          current: {
-            temperature_2m: 24,
-            apparent_temperature: 25,
-            relative_humidity_2m: 55,
-            is_day: 1,
-            weather_code: 95, // Thunderstorm -> triggers severe alert
-            wind_speed_10m: 18,
-            surface_pressure: 1015,
-          },
-          hourly: {
-            time: times,
-            surface_pressure: pressures,
-            temperature_2m: temps,
-            relative_humidity_2m: humids,
-            wind_speed_10m: Array(48).fill(15),
-            precipitation_probability: Array(48).fill(10),
-            weather_code: Array(48).fill(1),
-            is_day: Array(48).fill(1),
-            precipitation: Array(48).fill(0),
-          },
-          daily: {
-            time: ['2026-10-15', '2026-10-16', '2026-10-17'],
-            temperature_2m_max: [20, 26, 24],
-            temperature_2m_min: [12, 16, 15],
-            weather_code: [1, 95, 2],
-            precipitation_probability_max: [10, 80, 20],
-            sunrise: ['2026-10-15T06:00', '2026-10-16T06:01', '2026-10-17T06:02'],
-            sunset: ['2026-10-15T18:00', '2026-10-16T17:59', '2026-10-17T17:58'],
-          },
-        }),
-      } as Response);
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('air-quality-api.open-meteo.com')) {
+          return {
+            ok: true,
+            json: async () => ({
+              current: {
+                us_aqi: 42,
+                pm2_5: 9.8,
+              },
+              hourly: {
+                time: times,
+                us_aqi: times.map((_, idx) => (idx === 25 ? 150 : 42)), // hour 25 is smoky (AQI 150)
+              },
+            }),
+          } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            timezone: 'Asia/Tokyo',
+            utc_offset_seconds: 32400,
+            current: {
+              temperature_2m: 24,
+              apparent_temperature: 25,
+              relative_humidity_2m: 55,
+              is_day: 1,
+              weather_code: 95, // Thunderstorm -> triggers severe alert
+              wind_speed_10m: 18,
+              surface_pressure: 1015,
+              uv_index: 6,
+            },
+            hourly: {
+              time: times,
+              surface_pressure: pressures,
+              temperature_2m: temps,
+              relative_humidity_2m: humids,
+              wind_speed_10m: Array(48).fill(15),
+              precipitation_probability: Array(48).fill(10),
+              weather_code: Array(48).fill(1),
+              is_day: Array(48).fill(1),
+              precipitation: Array(48).fill(0),
+              uv_index: times.map((_, idx) => (idx === 26 ? 9 : 4)), // hour 26 has extreme UV (9)
+            },
+            daily: {
+              time: ['2026-10-15', '2026-10-16', '2026-10-17'],
+              temperature_2m_max: [20, 26, 24],
+              temperature_2m_min: [12, 16, 15],
+              weather_code: [1, 95, 2],
+              precipitation_probability_max: [10, 80, 20],
+              sunrise: ['2026-10-15T06:00', '2026-10-16T06:01', '2026-10-17T06:02'],
+              sunset: ['2026-10-15T18:00', '2026-10-16T17:59', '2026-10-17T17:58'],
+            },
+          }),
+        } as Response;
+      });
 
       const data = await fetchWeather(MOCK_LOCATION);
       expect(data.source).toBe('Open-Meteo');
+      expect(data.timezone).toBe('Asia/Tokyo');
+      expect(data.utcOffsetSeconds).toBe(32400);
       expect(data.current.tempC).toBe(24);
       expect(data.current.tempF).toBe(75);
+      expect(data.current.uvIndex).toBe(6);
+      expect(data.current.aqi).toBe(42);
+      expect(data.current.pm25).toBe(9.8);
       expect(data.current.pressureTrend).toBe('rising');
       expect(data.current.pressureDeltaHpa).toBe(3);
       expect(data.yesterdayComparison?.isWarmer).toBe(true);
@@ -320,16 +387,52 @@ describe('weatherService - Unit Tests', () => {
       expect(data.alerts?.[0].title).toBe('Severe Thunderstorm Warning');
       expect(data.hourly).toHaveLength(24);
       expect(data.hourly[0].isActivityOptimal).toBe(true);
+      // Hour 1 (idx 25) has AQI 150 (> 100 default maxAqi) -> not optimal
+      expect(data.hourly[1].isActivityOptimal).toBe(false);
+      // Hour 2 (idx 26) has UV 9 (> 7 default maxUvIndex) -> not optimal
+      expect(data.hourly[2].isActivityOptimal).toBe(false);
+      expect(data.daily[0].hourly).toBeDefined();
+      expect(data.daily[0].hourly?.length).toBeGreaterThan(0);
     });
 
-    it('falls back to cached data or synthetic fallback when offline', async () => {
+    it('returns cached data when offline and throws explicit offline error if no cache exists for that location', async () => {
       Object.defineProperty(window.navigator, 'onLine', { value: false, writable: true });
 
-      // No cache yet -> returns synthetic fallback
-      const synthetic = await fetchWeather(MOCK_LOCATION);
-      expect(synthetic.source).toBe('Offline Cache');
-      expect(synthetic.isOfflineCached).toBe(true);
-      expect(synthetic.current.tempC).toBe(21);
+      // No cache yet -> throws honest offline error instead of fake synthetic weather
+      await expect(fetchWeather(MOCK_LOCATION)).rejects.toThrow(
+        'No offline cache available for Tokyo'
+      );
+
+      // Save real cache and verify offline returns cached data
+      saveWeatherDataToCache({
+        location: MOCK_LOCATION,
+        current: {
+          tempC: 19,
+          tempF: 66,
+          feelsLikeC: 18,
+          feelsLikeF: 64,
+          humidity: 60,
+          windSpeedKmh: 10,
+          windSpeedMph: 6.2,
+          condition: 'Clear sky',
+          conditionCode: 0,
+          isDay: true,
+          sunrise: '6:00 AM',
+          sunset: '6:00 PM',
+          surfacePressure: 1013,
+          pressureTrend: 'steady',
+          pressureDeltaHpa: 0,
+        },
+        hourly: [],
+        daily: [],
+        fetchedAt: Date.now(),
+        source: 'Open-Meteo',
+      });
+
+      const cachedResult = await fetchWeather(MOCK_LOCATION);
+      expect(cachedResult.source).toBe('Offline Cache');
+      expect(cachedResult.isOfflineCached).toBe(true);
+      expect(cachedResult.current.tempC).toBe(19);
     });
   });
 });
