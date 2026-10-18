@@ -3,6 +3,7 @@ import {
   cToF,
   fToC,
   kmhToMph,
+  fuzzCoordinate,
   formatStaleness,
   getWmoConditionMeta,
   calculateAstronomicalWindows,
@@ -34,7 +35,7 @@ describe('weatherService - Unit Tests', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Unit Conversions (cToF, fToC & kmhToMph)', () => {
+  describe('Unit Conversions (cToF, fToC, kmhToMph & fuzzCoordinate)', () => {
     it('converts Celsius to Fahrenheit accurately', () => {
       expect(cToF(0)).toBe(32);
       expect(cToF(100)).toBe(212);
@@ -56,6 +57,12 @@ describe('weatherService - Unit Tests', () => {
       expect(kmhToMph(10)).toBe(6.2);
       expect(kmhToMph(25)).toBe(15.5);
       expect(kmhToMph(100)).toBe(62.1);
+    });
+
+    it('fuzzes GPS coordinates to 2 decimal places (~1.1 km resolution) when enabled', () => {
+      expect(fuzzCoordinate(37.774929, true)).toBe(37.77);
+      expect(fuzzCoordinate(-122.419416, true)).toBe(-122.42);
+      expect(fuzzCoordinate(37.774929, false)).toBe(37.774929);
     });
   });
 
@@ -231,6 +238,7 @@ describe('weatherService - Unit Tests', () => {
       expect(defaults.primaryUnit).toBe('C');
       expect(defaults.severeAlertsEnabled).toBe(true);
       expect(defaults.autoRefreshEnabled).toBe(false);
+      expect(defaults.coordinatePrivacyFuzzing).toBe(true);
       expect(defaults.activityPreferences.activityType).toBe('run');
 
       const updated = { ...defaults, primaryUnit: 'F' as const, theme: 'dark' as const };

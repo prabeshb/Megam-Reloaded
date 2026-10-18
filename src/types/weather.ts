@@ -146,6 +146,7 @@ export interface AppSettings {
   autoRefreshEnabled: boolean;
   autoRefreshIntervalMinutes: number;
   openWeatherMapKey: string;
+  coordinatePrivacyFuzzing?: boolean;
   activityPreferences: ActivityPreferences;
 }
 

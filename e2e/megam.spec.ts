@@ -186,6 +186,10 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await page.getByRole('button', { name: 'Dark' }).click();
     await expect(page.locator('html')).toHaveClass(/dark/);
 
+    // Verify Neighborhood-Only GPS Coordinate Privacy Fuzzing toggle is present and active
+    await expect(page.getByText('Neighborhood-Only GPS (~1.1 km)')).toBeVisible();
+    await expect(page.getByLabel('Toggle coordinate privacy fuzzing')).toBeVisible();
+
     // Close Settings and verify dashboard reflects changes
     await page.getByLabel('Close').click();
     await expect(page.getByText('Best Ride Window')).toBeVisible();

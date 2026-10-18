@@ -28,6 +28,11 @@ export function kmhToMph(kmh: number): number {
   return Math.round(kmh * 0.621371 * 10) / 10;
 }
 
+export function fuzzCoordinate(coord: number, enabled: boolean = true): number {
+  if (!enabled) return coord;
+  return Math.round(coord * 100) / 100;
+}
+
 export function formatStaleness(fetchedAt: number): string {
   const diffSec = Math.floor((Date.now() - fetchedAt) / 1000);
   if (diffSec < 60) return 'Updated just now';
@@ -788,6 +793,7 @@ export function getSavedSettings(): AppSettings {
     autoRefreshEnabled: false, // Default OFF per PRD
     autoRefreshIntervalMinutes: 30,
     openWeatherMapKey: '',
+    coordinatePrivacyFuzzing: true, // Default ON (~1.1 km neighborhood-only GPS fuzzing)
     activityPreferences: {
       activityType: 'run',
       minTempC: 12,

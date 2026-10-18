@@ -391,6 +391,16 @@ describe('UI Components - Unit Tests', () => {
         }),
       })
     );
+
+    // Neighborhood-Only GPS Privacy Fuzzing toggle
+    expect(screen.getByText(/Neighborhood-Only GPS/)).toBeInTheDocument();
+    const fuzzToggle = screen.getByLabelText('Toggle coordinate privacy fuzzing');
+    fireEvent.click(fuzzToggle);
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        coordinatePrivacyFuzzing: false,
+      })
+    );
   });
 
   it('evaluates next 6 hours in WhatToWearStrip for umbrella, jacket layering, UV protection, and wind/comfort chips', () => {

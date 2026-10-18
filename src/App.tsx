@@ -19,6 +19,7 @@ import {
   reverseGeocode,
   getLastSavedLocation,
   getWmoConditionMeta,
+  fuzzCoordinate,
 } from './services/weatherService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { APP_VERSION, APP_BUILD } from './version';
@@ -210,8 +211,9 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
+          const fuzzEnabled = settings.coordinatePrivacyFuzzing !== false;
+          const lat = fuzzCoordinate(pos.coords.latitude, fuzzEnabled);
+          const lon = fuzzCoordinate(pos.coords.longitude, fuzzEnabled);
           const geoInfo = await reverseGeocode(lat, lon);
           const detectedLoc: LocationInfo = {
             name: geoInfo.name,
@@ -237,7 +239,7 @@ export default function App() {
       },
       { timeout: 8000, enableHighAccuracy: false }
     );
-  }, [currentGpsLocation, activePageIndex, loadWeather]);
+  }, [currentGpsLocation, activePageIndex, loadWeather, settings.coordinatePrivacyFuzzing]);
 
   // Initial mount: load cached data instantly, then trigger async GPS
   useEffect(() => {

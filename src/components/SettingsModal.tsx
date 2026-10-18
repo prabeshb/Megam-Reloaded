@@ -484,6 +484,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
+          {/* On-Device Coordinate Privacy Fuzzing ("Neighborhood-Only GPS" Mode) */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 pr-2">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                      Neighborhood-Only GPS (~1.1 km)
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold">
+                      Privacy Shield
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Rounds GPS to 2 decimal places on-device so exact street coordinates never leave your phone
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  onUpdateSettings({
+                    ...settings,
+                    coordinatePrivacyFuzzing: settings.coordinatePrivacyFuzzing === false,
+                  })
+                }
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                  settings.coordinatePrivacyFuzzing !== false
+                    ? 'bg-emerald-500'
+                    : 'bg-slate-300 dark:bg-slate-700'
+                }`}
+                aria-label="Toggle coordinate privacy fuzzing"
+              >
+                <div
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                    settings.coordinatePrivacyFuzzing !== false ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Data Source & Privacy Transparency */}
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
             <div className="flex items-center gap-2">
