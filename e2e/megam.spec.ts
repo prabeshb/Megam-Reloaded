@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const MOCK_OPEN_METEO_PAYLOAD = {
+  timezone: 'America/New_York',
+  utc_offset_seconds: -14400,
   current: {
     temperature_2m: 23,
     apparent_temperature: 22,
@@ -85,7 +87,8 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     // Header & Brand
     await expect(page.locator('header')).toContainText('Megam');
 
-    // Dual-Unit Hero (23°C and 73°F visible simultaneously)
+    // Dual-Unit Hero (23°C and 73°F visible simultaneously) & Destination Local Time Clock
+    await expect(page.getByText(/Local time ·/)).toBeVisible();
     await expect(page.getByText('23°C').first()).toBeVisible();
     await expect(page.getByText('73°F').first()).toBeVisible();
     await expect(page.getByText('Mainly clear').first()).toBeVisible();

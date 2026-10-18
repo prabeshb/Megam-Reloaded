@@ -169,10 +169,13 @@ describe('UI Components - Unit Tests', () => {
         onOpenSearch={onOpenSearch}
         isFavorite={false}
         onToggleFavorite={onToggleFavorite}
+        timezone="Europe/London"
+        utcOffsetSeconds={3600}
       />
     );
 
     expect(screen.getByText('London')).toBeInTheDocument();
+    expect(screen.getByText(/Local time ·/)).toBeInTheDocument();
     expect(screen.getByText('18°C')).toBeInTheDocument();
     expect(screen.getByText('64°F')).toBeInTheDocument();
     expect(screen.getByText(/Feels like 17°C/)).toBeInTheDocument();

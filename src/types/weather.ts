@@ -105,6 +105,8 @@ export interface WeatherData {
   yesterdayComparison?: YesterdayComparison;
   nextHourRain?: NextHourPrecipitation;
   astronomicalWindows?: AstronomicalWindows;
+  timezone?: string;
+  utcOffsetSeconds?: number;
   fetchedAt: number;
   source: 'Open-Meteo' | 'OpenWeatherMap' | 'Offline Cache';
   isOfflineCached?: boolean;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CurrentWeather, DailyForecast, LocationInfo, PrimaryUnit } from '../types/weather';
 import { WeatherIcon } from './WeatherIcons';
-import { MapPin, ArrowUp, ArrowDown } from 'lucide-react';
+import { MapPin, ArrowUp, ArrowDown, Clock } from 'lucide-react';
 
 interface CurrentWeatherHeroProps {
   location: LocationInfo;
@@ -11,6 +11,8 @@ interface CurrentWeatherHeroProps {
   onOpenSearch: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  timezone?: string;
+  utcOffsetSeconds?: number;
 }
 
 export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
@@ -21,6 +23,8 @@ export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
   onOpenSearch,
   isFavorite,
   onToggleFavorite,
+  timezone,
+  utcOffsetSeconds,
 }) => {
   const isCelsiusPrimary = primaryUnit === 'C';
   const primaryTemp = isCelsiusPrimary ? `${current.tempC}°C` : `${current.tempF}°F`;
@@ -28,6 +32,37 @@ export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
 
   const primaryFeelsLike = isCelsiusPrimary ? `${current.feelsLikeC}°C` : `${current.feelsLikeF}°F`;
   const secondaryFeelsLike = isCelsiusPrimary ? `${current.feelsLikeF}°F` : `${current.feelsLikeC}°C`;
+
+  const formatDestinationLocalTime = (): string => {
+    try {
+      if (timezone) {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }).format(new Date());
+      }
+      if (typeof utcOffsetSeconds === 'number') {
+        const utcMs = Date.now() + new Date().getTimezoneOffset() * 60000;
+        const destDate = new Date(utcMs + utcOffsetSeconds * 1000);
+        return destDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+      }
+    } catch {
+      // Fallback to device local time if timezone string is unrecognized
+    }
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const localTimeStr = formatDestinationLocalTime();
 
   const formatHighLow = (maxC: number, maxF: number, minC: number, minF: number) => {
     if (isCelsiusPrimary) {
@@ -92,6 +127,12 @@ export const CurrentWeatherHero: React.FC<CurrentWeatherHeroProps> = ({
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         </button>
+      </div>
+
+      {/* Destination Local Time Clock Pill */}
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+        <Clock size={11} className="text-sky-500 shrink-0" />
+        <span>Local time · {localTimeStr}</span>
       </div>
 
       {/* Weather Condition Icon */}

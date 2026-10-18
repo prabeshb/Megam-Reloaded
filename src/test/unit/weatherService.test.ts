@@ -275,6 +275,8 @@ describe('weatherService - Unit Tests', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
         ok: true,
         json: async () => ({
+          timezone: 'Asia/Tokyo',
+          utc_offset_seconds: 32400,
           current: {
             temperature_2m: 24,
             apparent_temperature: 25,
@@ -309,6 +311,8 @@ describe('weatherService - Unit Tests', () => {
 
       const data = await fetchWeather(MOCK_LOCATION);
       expect(data.source).toBe('Open-Meteo');
+      expect(data.timezone).toBe('Asia/Tokyo');
+      expect(data.utcOffsetSeconds).toBe(32400);
       expect(data.current.tempC).toBe(24);
       expect(data.current.tempF).toBe(75);
       expect(data.current.pressureTrend).toBe('rising');

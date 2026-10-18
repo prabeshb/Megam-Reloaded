@@ -411,6 +411,8 @@ export default function App() {
                 onOpenSearch={() => setIsSearchOpen(true)}
                 isFavorite={isCurrentFavorite}
                 onToggleFavorite={handleToggleFavorite}
+                timezone={weatherData.timezone}
+                utcOffsetSeconds={weatherData.utcOffsetSeconds}
               />
 
               {/* 60-Minute Rain Bar Nowcasting (PRD v2 Value-Add Feature) */}
