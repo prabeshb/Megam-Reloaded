@@ -28,6 +28,7 @@ export interface NextHourPrecipitation {
   hasRain: boolean;
   summaryText: string;
   minuteBars: MinuteRainBar[];
+  isLiveNowcast?: boolean;
 }
 
 export interface AstronomicalWindows {

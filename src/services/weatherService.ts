@@ -142,7 +142,68 @@ export function calculateAstronomicalWindows(sunriseIso: string, sunsetIso: stri
 }
 
 // 60-Minute Rain Bar (Next-Hour Nowcasting) Generator
-export function calculateNextHourRain(currentCode: number, hourlyPop: number, hourlyPrecipMm: number = 0): NextHourPrecipitation {
+export function calculateNextHourRain(
+  currentCode: number,
+  hourlyPop: number,
+  hourlyPrecipMm: number = 0,
+  minutely15PrecipMm?: number[]
+): NextHourPrecipitation {
+  const hasRealMinutely =
+    Array.isArray(minutely15PrecipMm) &&
+    minutely15PrecipMm.length >= 4 &&
+    minutely15PrecipMm.slice(0, 4).every((v) => typeof v === 'number' && !isNaN(v));
+
+  if (hasRealMinutely && minutely15PrecipMm) {
+    const pts = [
+      minutely15PrecipMm[0],
+      minutely15PrecipMm[1],
+      minutely15PrecipMm[2],
+      minutely15PrecipMm[3],
+      minutely15PrecipMm[4] ?? minutely15PrecipMm[3],
+    ];
+    const minuteBars: MinuteRainBar[] = [];
+
+    for (let m = 0; m < 60; m += 5) {
+      const segIdx = Math.floor(m / 15);
+      const frac = (m % 15) / 15;
+      const startVal = pts[segIdx] ?? 0;
+      const endVal = pts[segIdx + 1] ?? startVal;
+      const interpolated = startVal + (endVal - startVal) * frac;
+      const intensityMm = Math.max(0, Number(interpolated.toFixed(1)));
+
+      let level: 'none' | 'light' | 'moderate' | 'heavy' = 'none';
+      if (intensityMm >= 4.0) level = 'heavy';
+      else if (intensityMm >= 1.5) level = 'moderate';
+      else if (intensityMm > 0.0) level = 'light';
+      else level = 'none';
+
+      minuteBars.push({ minute: m, intensityMm, level });
+    }
+
+    const hasRain = minuteBars.some((b) => b.intensityMm > 0);
+    let summaryText = 'Dry conditions expected for the next 60 minutes';
+    if (hasRain) {
+      if (minuteBars[0].intensityMm > 0) {
+        const isHeavy = minuteBars.some((b) => b.level === 'heavy');
+        summaryText = isHeavy
+          ? 'Heavy rain continuing over the next hour'
+          : 'Light to moderate rain for the next 45+ mins';
+      } else {
+        const firstRain = minuteBars.find((b) => b.intensityMm > 0);
+        if (firstRain) {
+          summaryText = `Light precipitation expected in ~${firstRain.minute} minutes`;
+        }
+      }
+    }
+
+    return {
+      hasRain,
+      summaryText,
+      minuteBars,
+      isLiveNowcast: true,
+    };
+  }
+
   const isRainingNow = (currentCode >= 51 && currentCode <= 67) || (currentCode >= 80 && currentCode <= 82) || currentCode >= 95;
   const hasChance = isRainingNow || hourlyPop >= 25 || hourlyPrecipMm > 0.1;
 
@@ -189,6 +250,7 @@ export function calculateNextHourRain(currentCode: number, hourlyPop: number, ho
     hasRain: hasChance,
     summaryText,
     minuteBars,
+    isLiveNowcast: false,
   };
 }
 
@@ -290,7 +352,7 @@ export async function fetchWeather(
   // Primary: Open-Meteo with past_days=1 for high-accuracy yesterday comparison
   if (isOnline) {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,surface_pressure&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m,surface_pressure&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&past_days=1&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,surface_pressure&minutely_15=precipitation&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m,surface_pressure&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max&past_days=1&timezone=auto`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Open-Meteo returned status ${res.status}`);
       const raw = await res.json();
@@ -460,11 +522,21 @@ export async function fetchWeather(
       const todaySunsetIso = raw.daily?.sunset?.[1] || '';
       const astronomicalWindows = calculateAstronomicalWindows(todaySunriseIso, todaySunsetIso);
 
-      // Next-Hour Rain Nowcasting
+      // Next-Hour Rain Nowcasting (Real 15-minute data if returned by Open-Meteo)
+      let minutely15Slice: number[] | undefined;
+      const mTimes: string[] = raw.minutely_15?.time || [];
+      const mPrecip: number[] = raw.minutely_15?.precipitation || [];
+      if (mTimes.length >= 4 && mPrecip.length >= 4) {
+        let mIdx = mTimes.findIndex((t: string) => t.startsWith(nowIsoHour));
+        if (mIdx === -1) mIdx = 0;
+        minutely15Slice = mPrecip.slice(mIdx, mIdx + 5);
+      }
+
       const nextHourRain = calculateNextHourRain(
         currentCode,
         hourlyPops[startIdx] || 0,
-        hourlyPrecip[startIdx] || 0
+        hourlyPrecip[startIdx] || 0,
+        minutely15Slice
       );
 
       // Severe Weather Alerts

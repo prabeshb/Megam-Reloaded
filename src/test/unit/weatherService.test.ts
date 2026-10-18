@@ -153,8 +153,22 @@ describe('weatherService - Unit Tests', () => {
     it('generates approaching rain summary when currently dry but PoP >= 25%', () => {
       const result = calculateNextHourRain(2, 60, 0.5);
       expect(result.hasRain).toBe(true);
+      expect(result.isLiveNowcast).toBe(false);
       expect(result.summaryText).toMatch(/Light precipitation expected in ~\d+ minutes/);
       expect(result.minuteBars.some((b) => b.intensityMm > 0)).toBe(true);
+    });
+
+    it('interpolates real 15-minute minutely_15 precipitation into 5-minute bars and sets isLiveNowcast=true', () => {
+      const result = calculateNextHourRain(61, 80, 2.0, [0, 1.5, 3.0, 4.5, 1.2]);
+      expect(result.isLiveNowcast).toBe(true);
+      expect(result.hasRain).toBe(true);
+      expect(result.minuteBars).toHaveLength(12);
+      // 0m -> 0, 15m (idx 3) -> 1.5, 30m (idx 6) -> 3.0, 45m (idx 9) -> 4.5
+      expect(result.minuteBars[0].intensityMm).toBe(0);
+      expect(result.minuteBars[3].intensityMm).toBe(1.5);
+      expect(result.minuteBars[6].intensityMm).toBe(3);
+      expect(result.minuteBars[9].intensityMm).toBe(4.5);
+      expect(result.minuteBars[9].level).toBe('heavy');
     });
   });
 

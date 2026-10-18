@@ -209,12 +209,20 @@ describe('UI Components - Unit Tests', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders NextHourRainBar with 12 5-minute bars and intensity legend', () => {
-    render(<NextHourRainBar rainData={MOCK_WEATHER_DATA.nextHourRain} />);
+  it('renders NextHourRainBar with 12 5-minute bars, intensity legend, and Live Radar Nowcast vs Hourly Trend Estimate badge', () => {
+    const { rerender } = render(<NextHourRainBar rainData={MOCK_WEATHER_DATA.nextHourRain} />);
     expect(screen.getByText('Next 60 Minutes')).toBeInTheDocument();
+    expect(screen.getByText('Hourly Trend Estimate')).toBeInTheDocument();
     expect(screen.getByText('Light precipitation expected in ~15 minutes')).toBeInTheDocument();
     expect(screen.getByText('Light')).toBeInTheDocument();
     expect(screen.getByText('Heavy')).toBeInTheDocument();
+
+    rerender(
+      <NextHourRainBar
+        rainData={{ ...MOCK_WEATHER_DATA.nextHourRain!, isLiveNowcast: true }}
+      />
+    );
+    expect(screen.getByText('Live Radar Nowcast')).toBeInTheDocument();
   });
 
   it('renders QuickMetricsGrid with dual wind speed and pressure trend arrow', () => {

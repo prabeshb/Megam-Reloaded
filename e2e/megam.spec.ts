@@ -12,6 +12,13 @@ const MOCK_OPEN_METEO_PAYLOAD = {
     wind_speed_10m: 15,
     surface_pressure: 1017,
   },
+  minutely_15: {
+    time: Array.from({ length: 8 }, (_, i) => {
+      const d = new Date(Date.now() + i * 15 * 60000);
+      return d.toISOString().slice(0, 16);
+    }),
+    precipitation: [0, 0, 0, 0, 0, 0, 0, 0],
+  },
   hourly: {
     time: Array.from({ length: 192 }, (_, i) => {
       const dayIdx = Math.floor(i / 24);
@@ -95,6 +102,7 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
 
     // 60-Minute Rain Bar Nowcasting
     await expect(page.getByText('Next 60 Minutes', { exact: true })).toBeVisible();
+    await expect(page.getByText('Live Radar Nowcast')).toBeVisible();
     await expect(page.getByText('Dry conditions expected for the next 60 minutes')).toBeVisible();
 
     // Quick Metrics Grid (Humidity, Dual Wind, Sunrise/Sunset, Barometric Pressure)
