@@ -84,6 +84,7 @@ export interface DailyForecast {
   popPercent: number;
   sunrise: string;
   sunset: string;
+  hourly?: HourlyForecast[];
 }
 
 export interface SevereAlert {

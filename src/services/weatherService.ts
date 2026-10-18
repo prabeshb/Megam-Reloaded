@@ -360,6 +360,48 @@ export async function fetchWeather(
         };
       }
 
+      // Activity Window matching preferences
+      const defaultPrefs: ActivityPreferences = activityPrefs || {
+        activityType: 'run',
+        minTempC: 12,
+        maxTempC: 24,
+        maxWindKmh: 25,
+        maxPopPercent: 20,
+      };
+
+      const buildHourlyItem = (i: number, isNowLabel: boolean): HourlyForecast => {
+        const timeIso = times[i];
+        const dt = new Date(timeIso);
+        const hourLabel = isNowLabel
+          ? 'Now'
+          : dt.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+        const hTempC = Math.round(hourlyTemps[i] ?? 20);
+        const hWind = Math.round(hourlyWinds[i] ?? 10);
+        const hPop = Math.round(hourlyPops[i] ?? 0);
+        const hCode = hourlyCodes[i] ?? 0;
+        const hIsDay = hourlyDays[i] === 1;
+        const hMeta = getWmoConditionMeta(hCode, hIsDay);
+
+        const isOptimal =
+          hTempC >= defaultPrefs.minTempC &&
+          hTempC <= defaultPrefs.maxTempC &&
+          hWind <= defaultPrefs.maxWindKmh &&
+          hPop <= defaultPrefs.maxPopPercent;
+
+        return {
+          time: timeIso,
+          hourLabel,
+          tempC: hTempC,
+          tempF: cToF(hTempC),
+          condition: hMeta.description,
+          conditionCode: hCode,
+          popPercent: hPop,
+          isDay: hIsDay,
+          windSpeedKmh: hWind,
+          isActivityOptimal: isOptimal,
+        };
+      };
+
       // Daily Forecasts (skip index 0 which was yesterday)
       const dailyDays: DailyForecast[] = (raw.daily?.time || []).slice(1, 8).map((dateStr: string, idx: number) => {
         const actualIdx = idx + 1;
@@ -382,6 +424,14 @@ export async function fetchWeather(
             : dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         };
 
+        // Group matching hourly items for this specific date (up to 24 hours)
+        const dayHourly: HourlyForecast[] = [];
+        for (let i = 0; i < times.length; i++) {
+          if (times[i].startsWith(dateStr)) {
+            dayHourly.push(buildHourlyItem(i, false));
+          }
+        }
+
         return {
           date: dateStr,
           dayName,
@@ -395,50 +445,14 @@ export async function fetchWeather(
           popPercent: pop,
           sunrise: formatSunTime(sunriseIso),
           sunset: formatSunTime(sunsetIso),
+          hourly: dayHourly,
         };
       });
-
-      // Hourly items for next 24 hours + Activity Window matching
-      const defaultPrefs: ActivityPreferences = activityPrefs || {
-        activityType: 'run',
-        minTempC: 12,
-        maxTempC: 24,
-        maxWindKmh: 25,
-        maxPopPercent: 20,
-      };
 
       const hourlySliced: HourlyForecast[] = [];
       const startIdx = Math.max(0, nowIdx);
       for (let i = startIdx; i < startIdx + 24 && i < times.length; i++) {
-        const timeIso = times[i];
-        const dt = new Date(timeIso);
-        const isNow = i === startIdx;
-        const hourLabel = isNow ? 'Now' : dt.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
-        const hTempC = Math.round(hourlyTemps[i] ?? 20);
-        const hWind = Math.round(hourlyWinds[i] ?? 10);
-        const hPop = Math.round(hourlyPops[i] ?? 0);
-        const hCode = hourlyCodes[i] ?? 0;
-        const hIsDay = hourlyDays[i] === 1;
-        const hMeta = getWmoConditionMeta(hCode, hIsDay);
-
-        const isOptimal =
-          hTempC >= defaultPrefs.minTempC &&
-          hTempC <= defaultPrefs.maxTempC &&
-          hWind <= defaultPrefs.maxWindKmh &&
-          hPop <= defaultPrefs.maxPopPercent;
-
-        hourlySliced.push({
-          time: timeIso,
-          hourLabel,
-          tempC: hTempC,
-          tempF: cToF(hTempC),
-          condition: hMeta.description,
-          conditionCode: hCode,
-          popPercent: hPop,
-          isDay: hIsDay,
-          windSpeedKmh: hWind,
-          isActivityOptimal: isOptimal,
-        });
+        hourlySliced.push(buildHourlyItem(i, i === startIdx));
       }
 
       // Golden Hour & Blue Hour calculations

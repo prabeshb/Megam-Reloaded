@@ -11,19 +11,20 @@ const MOCK_OPEN_METEO_PAYLOAD = {
     surface_pressure: 1017,
   },
   hourly: {
-    time: Array.from({ length: 48 }, (_, i) =>
-      i === 24
-        ? new Date().toISOString().slice(0, 13) + ':00'
-        : `2026-10-16T${String(i % 24).padStart(2, '0')}:00`
-    ),
-    surface_pressure: Array(48).fill(1015),
-    temperature_2m: Array(48).fill(23),
-    relative_humidity_2m: Array(48).fill(50),
-    wind_speed_10m: Array(48).fill(14),
-    precipitation_probability: Array(48).fill(10),
-    weather_code: Array(48).fill(1),
-    is_day: Array(48).fill(1),
-    precipitation: Array(48).fill(0),
+    time: Array.from({ length: 192 }, (_, i) => {
+      const dayIdx = Math.floor(i / 24);
+      const hour = i % 24;
+      const dateStr = `2026-10-${String(15 + dayIdx).padStart(2, '0')}`;
+      return `${dateStr}T${String(hour).padStart(2, '0')}:00`;
+    }),
+    surface_pressure: Array(192).fill(1015),
+    temperature_2m: Array(192).fill(23),
+    relative_humidity_2m: Array(192).fill(50),
+    wind_speed_10m: Array(192).fill(14),
+    precipitation_probability: Array(192).fill(10),
+    weather_code: Array(192).fill(1),
+    is_day: Array(192).fill(1),
+    precipitation: Array(192).fill(0),
   },
   daily: {
     time: [
@@ -112,8 +113,10 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await expect(page.getByText('Morning Blue')).toBeVisible();
     await expect(page.getByText('Evening Blue')).toBeVisible();
 
-    // 7-Day Forecast & Version Footer
+    // 7-Day Forecast & Interactive Row Expansion
     await expect(page.getByText('7-Day Forecast')).toBeVisible();
+    await page.getByLabel('Expand Today hourly forecast').click();
+    await expect(page.getByTestId('daily-hourly-strip-2026-10-16')).toBeVisible();
     await expect(page.getByText('v2.0.1')).toBeVisible();
   });
 

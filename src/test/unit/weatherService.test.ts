@@ -320,6 +320,8 @@ describe('weatherService - Unit Tests', () => {
       expect(data.alerts?.[0].title).toBe('Severe Thunderstorm Warning');
       expect(data.hourly).toHaveLength(24);
       expect(data.hourly[0].isActivityOptimal).toBe(true);
+      expect(data.daily[0].hourly).toBeDefined();
+      expect(data.daily[0].hourly?.length).toBeGreaterThan(0);
     });
 
     it('returns cached data when offline and throws explicit offline error if no cache exists for that location', async () => {

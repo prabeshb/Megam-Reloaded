@@ -91,6 +91,32 @@ const MOCK_WEATHER_DATA: WeatherData = {
       popPercent: 70,
       sunrise: '6:17 AM',
       sunset: '7:43 PM',
+      hourly: [
+        {
+          time: '2026-10-17T09:00',
+          hourLabel: '9 AM',
+          tempC: 15,
+          tempF: 59,
+          condition: 'Light drizzle',
+          conditionCode: 51,
+          popPercent: 40,
+          isDay: true,
+          windSpeedKmh: 12,
+          isActivityOptimal: false,
+        },
+        {
+          time: '2026-10-17T14:00',
+          hourLabel: '2 PM',
+          tempC: 19,
+          tempF: 66,
+          condition: 'Mainly clear',
+          conditionCode: 1,
+          popPercent: 10,
+          isDay: true,
+          windSpeedKmh: 10,
+          isActivityOptimal: true,
+        },
+      ],
     },
   ],
   yesterdayComparison: {
@@ -231,13 +257,23 @@ describe('UI Components - Unit Tests', () => {
     expect(screen.getByText('Evening Blue')).toBeInTheDocument();
   });
 
-  it('renders DailyForecast with dual-unit highs and lows', () => {
+  it('renders DailyForecast with dual-unit highs and lows and expands a day row to show its horizontal hourly strip', () => {
     render(<DailyForecast daily={MOCK_WEATHER_DATA.daily} primaryUnit="C" />);
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('Sat')).toBeInTheDocument();
     expect(screen.getByText('20°C')).toBeInTheDocument();
     expect(screen.getByText('· 68°F')).toBeInTheDocument();
     expect(screen.getByText('70%')).toBeInTheDocument();
+
+    // Tap 'Sat' row to expand its 24-hour forecast strip
+    fireEvent.click(screen.getByText('Sat'));
+    expect(screen.getByText('9 AM')).toBeInTheDocument();
+    expect(screen.getByText('2 PM')).toBeInTheDocument();
+    expect(screen.getByText('40%')).toBeInTheDocument();
+
+    // Tap 'Sat' again to collapse
+    fireEvent.click(screen.getByText('Sat'));
+    expect(screen.queryByText('9 AM')).not.toBeInTheDocument();
   });
 
   it('expands and dismisses SevereAlertBanner', () => {
