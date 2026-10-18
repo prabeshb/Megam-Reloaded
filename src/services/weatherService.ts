@@ -829,3 +829,66 @@ export function saveSettings(settings: AppSettings): void {
     console.warn('Failed to save settings', err);
   }
 }
+
+export interface MegamBackupPayload {
+  version: number;
+  exportedAt: number;
+  settings: AppSettings;
+  favorites: FavoriteLocation[];
+}
+
+export function exportAppConfiguration(
+  settings: AppSettings,
+  favorites: FavoriteLocation[]
+): string {
+  const payload: MegamBackupPayload = {
+    version: 1,
+    exportedAt: Date.now(),
+    settings,
+    favorites,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+export function parseImportedConfiguration(rawInput: string): {
+  settings: AppSettings;
+  favorites: FavoriteLocation[];
+} {
+  const trimmed = (rawInput || '').trim();
+  if (!trimmed) {
+    throw new Error('Backup string is empty');
+  }
+
+  let jsonStr = trimmed;
+  if (!trimmed.startsWith('{')) {
+    try {
+      jsonStr = decodeURIComponent(atob(trimmed));
+    } catch {
+      jsonStr = atob(trimmed);
+    }
+  }
+
+  const parsed = JSON.parse(jsonStr);
+  if (!parsed || typeof parsed !== 'object' || (!parsed.settings && !parsed.favorites)) {
+    throw new Error('Invalid backup format');
+  }
+
+  const defaults = getSavedSettings();
+  const mergedSettings: AppSettings = {
+    ...defaults,
+    ...(parsed.settings || {}),
+    activityPreferences: {
+      ...defaults.activityPreferences,
+      ...(parsed.settings?.activityPreferences || {}),
+    },
+  };
+
+  const mergedFavorites: FavoriteLocation[] = Array.isArray(parsed.favorites)
+    ? parsed.favorites
+    : getSavedFavorites();
+
+  return {
+    settings: mergedSettings,
+    favorites: mergedFavorites,
+  };
+}

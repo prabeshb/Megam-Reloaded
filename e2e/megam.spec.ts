@@ -190,6 +190,11 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await expect(page.getByText('Neighborhood-Only GPS (~1.1 km)')).toBeVisible();
     await expect(page.getByLabel('Toggle coordinate privacy fuzzing')).toBeVisible();
 
+    // Verify Zero-Cloud Backup Export & Import controls are present
+    await expect(page.getByText('Zero-Cloud Backup & Portability')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Export Configuration' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Import Configuration' })).toBeVisible();
+
     // Close Settings and verify dashboard reflects changes
     await page.getByLabel('Close').click();
     await expect(page.getByText('Best Ride Window')).toBeVisible();

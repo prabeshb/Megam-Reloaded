@@ -401,6 +401,22 @@ describe('UI Components - Unit Tests', () => {
         coordinatePrivacyFuzzing: false,
       })
     );
+
+    // Zero-Cloud Backup Export & Import
+    expect(screen.getByText('Zero-Cloud Backup & Portability')).toBeInTheDocument();
+    const importInput = screen.getByLabelText('Backup JSON or Base64 string');
+    const samplePayload = JSON.stringify({
+      version: 1,
+      settings: { ...baseSettings, primaryUnit: 'C' },
+      favorites: [{ id: 'fav_1', name: 'Rome', country: 'Italy', lat: 41.9, lon: 12.5, addedAt: 1 }],
+    });
+    fireEvent.change(importInput, { target: { value: samplePayload } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import Configuration' }));
+    expect(onUpdateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        primaryUnit: 'C',
+      })
+    );
   });
 
   it('evaluates next 6 hours in WhatToWearStrip for umbrella, jacket layering, UV protection, and wind/comfort chips', () => {

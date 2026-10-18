@@ -507,6 +507,11 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
+        favorites={favorites}
+        onUpdateFavorites={(newFavs) => {
+          setFavorites(newFavs);
+          saveFavorites(newFavs);
+        }}
       />
 
       <WidgetPreviewModal

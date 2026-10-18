@@ -19,6 +19,8 @@ import {
   saveFavorites,
   getSavedSettings,
   saveSettings,
+  exportAppConfiguration,
+  parseImportedConfiguration,
 } from '../../services/weatherService';
 import { LocationInfo, WeatherData } from '../../types/weather';
 
@@ -245,6 +247,22 @@ describe('weatherService - Unit Tests', () => {
       saveSettings(updated);
       expect(getSavedSettings().primaryUnit).toBe('F');
       expect(getSavedSettings().theme).toBe('dark');
+    });
+
+    it('exports and imports zero-cloud backup configuration (JSON and Base64)', () => {
+      const settings = { ...getSavedSettings(), primaryUnit: 'F' as const };
+      const favorites = [
+        { id: 'fav_sydney', name: 'Sydney', country: 'Australia', lat: -33.86, lon: 151.2, addedAt: 100 },
+      ];
+      const jsonStr = exportAppConfiguration(settings, favorites);
+      const parsedFromJson = parseImportedConfiguration(jsonStr);
+      expect(parsedFromJson.settings.primaryUnit).toBe('F');
+      expect(parsedFromJson.favorites).toHaveLength(1);
+      expect(parsedFromJson.favorites[0].name).toBe('Sydney');
+
+      const base64Str = btoa(encodeURIComponent(jsonStr));
+      const parsedFromBase64 = parseImportedConfiguration(base64Str);
+      expect(parsedFromBase64.favorites[0].name).toBe('Sydney');
     });
   });
 
