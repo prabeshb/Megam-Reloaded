@@ -321,6 +321,7 @@ describe('UI Components - Unit Tests', () => {
 
     expect(screen.getByText('Android Material You Widgets')).toBeInTheDocument();
     expect(screen.getByText('4 × 2 Panoramic Widget')).toBeInTheDocument();
+    expect(screen.getByText(/When Megam is installed as a PWA on Android/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('2 × 2 Square Glance'));
     expect(screen.getByText('H: 20°')).toBeInTheDocument();

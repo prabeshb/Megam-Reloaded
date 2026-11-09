@@ -161,7 +161,7 @@ Users can customize all application behaviors with immediate persistence to `loc
 2. **Offline Banner & Badge:** When offline or displaying cached data (`weatherData.isOfflineCached === true`), the header badge switches to **`Offline`** and an amber banner appears above the forecast: *"Offline Mode: Displaying last known cached forecast"*.
 3. **Three-Tier Fallback Guarantee:**
    - **Tier 1 (Live API):** OpenWeatherMap (if key configured) $\rightarrow$ Open-Meteo API.
-   - **Tier 2 (Location Cache):** Reads `megan_weather_cache_<lat>_<lon>` from `localStorage`.
+   - **Tier 2 (Location Cache):** Reads `megam_weather_cache_<lat>_<lon>` from `localStorage`.
    - **Tier 3 (Synthetic Fallback):** If a user launches the app completely offline for a location that has never been cached, `generateSyntheticFallback()` provides a safe baseline forecast marked as `Offline Cache` so the UI remains fully functional.
 
 ---

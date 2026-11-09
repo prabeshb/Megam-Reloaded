@@ -168,7 +168,7 @@ export const WidgetPreviewModal: React.FC<WidgetPreviewModalProps> = ({
               </div>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-              When Megan is installed as a PWA on Android or compiled via Capacitor, long-press any empty space on your Android home screen, select <strong>Widgets</strong>, and choose <strong>Megam Weather</strong> to pin glanceable dual-unit widgets.
+              When Megam is installed as a PWA on Android or compiled via Capacitor, long-press any empty space on your Android home screen, select <strong>Widgets</strong>, and choose <strong>Megam Weather</strong> to pin glanceable dual-unit widgets.
             </p>
           </div>
         </div>

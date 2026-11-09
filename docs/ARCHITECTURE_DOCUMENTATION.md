@@ -77,7 +77,7 @@ Encapsulates all external network I/O, data normalization, fallback chains, and 
 - **Provider Strategy & Fallback Chain:**
   1. **User-Configured OpenWeatherMap API** (if online and a valid key `> 10` chars is configured in Settings).
   2. **Open-Meteo Forecast API** (primary zero-key provider with `past_days=1` for 24-hour historical delta calculation).
-  3. **Location-Keyed Offline Cache** (`megan_weather_cache_<lat>_<lon>` in `localStorage`).
+  3. **Location-Keyed Offline Cache** (`megam_weather_cache_<lat>_<lon>` in `localStorage`).
   4. **Synthetic Offline Fallback Generator** (`generateSyntheticFallback`) guaranteeing the UI never crashes on first launch without connectivity.
 - **On-Device Calculators:**
   - `calculateAstronomicalWindows()`: Computes Morning/Evening Blue and Golden Hours from daily sunrise/sunset timestamps.
@@ -91,10 +91,10 @@ All user preferences and weather snapshots are stored locally on the device:
 
 | Storage Key | Type / Format | Purpose |
 | :--- | :--- | :--- |
-| `megan_weather_cache_<lat>_<lon>` | `WeatherData` (JSON) | Location-keyed weather snapshot rounded to 2 decimal places (`lat.toFixed(2)_lon.toFixed(2)`). |
-| `megan_weather_last_loc` | `LocationInfo` (JSON) | Last resolved or selected location for instant `0ms` startup hydration. |
-| `megan_weather_favorites` | `FavoriteLocation[]` (JSON) | User's saved favorite locations (defaults to Tokyo, London, New York on first run). |
-| `megan_weather_settings` | `AppSettings` (JSON) | Primary unit, theme, alert toggle, auto-refresh config, OWM key, and activity thresholds. |
+| `megam_weather_cache_<lat>_<lon>` | `WeatherData` (JSON) | Location-keyed weather snapshot rounded to 2 decimal places (`lat.toFixed(2)_lon.toFixed(2)`). |
+| `megam_weather_last_loc` | `LocationInfo` (JSON) | Last resolved or selected location for instant `0ms` startup hydration. |
+| `megam_weather_favorites` | `FavoriteLocation[]` (JSON) | User's saved favorite locations (defaults to Tokyo, London, New York on first run). |
+| `megam_weather_settings` | `AppSettings` (JSON) | Primary unit, theme, alert toggle, auto-refresh config, OWM key, and activity thresholds. |
 
 ---
 

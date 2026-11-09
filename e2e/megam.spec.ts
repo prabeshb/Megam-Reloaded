@@ -152,7 +152,8 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await expect(page.getByText('7-Day Forecast')).toBeVisible();
     await page.getByLabel('Expand Today hourly forecast').click();
     await expect(page.getByTestId('daily-hourly-strip-2026-10-16')).toBeVisible();
-    await expect(page.getByText('v2.1.0')).toBeVisible();
+    await expect(page).toHaveTitle('Megam Weather');
+    await expect(page.getByText('v2.1.1')).toBeVisible();
   });
 
   test('E2E 2: Configures Settings (Fahrenheit primary unit, Dark mode, Activity thresholds)', async ({
