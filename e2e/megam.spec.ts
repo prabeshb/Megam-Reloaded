@@ -120,6 +120,7 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
 
     // What to Wear / Bring Contextual Recommendation Strip
     await expect(page.getByTestId('what-to-wear-strip')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/megam-dashboard.png' });
 
     // 60-Minute Rain Bar Nowcasting
     await expect(page.getByText('Next 60 Minutes', { exact: true })).toBeVisible();
@@ -186,6 +187,7 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     // Switch to Dark Theme
     await page.getByRole('button', { name: 'Dark' }).click();
     await expect(page.locator('html')).toHaveClass(/dark/);
+    await page.screenshot({ path: 'docs/screenshots/megam-dark-settings.png' });
 
     // Verify Neighborhood-Only GPS Coordinate Privacy Fuzzing toggle is present and active
     await expect(page.getByText('Neighborhood-Only GPS (~1.1 km)')).toBeVisible();
@@ -291,6 +293,7 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     // Copy Summary & Link and verify confirmation badge
     await page.getByRole('button', { name: /Copy Summary & Link/i }).click();
     await expect(page.getByText('Copied to clipboard!')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/megam-share-modal.png' });
 
     // Switch to Share Megam App tab
     await page.getByRole('button', { name: 'Share Megam App' }).click();

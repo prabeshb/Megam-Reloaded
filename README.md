@@ -1,343 +1,236 @@
-# Megam Weather (v2.0)
+<div align="center">
 
-A fast, lightweight, mobile-first weather application delivering quick forecasts for your current or searched locations with simultaneous metric and imperial temperature displays, offline caching, and native Android packaging.
+<img src="public/icon.svg" alt="Megam Weather Logo" width="88" height="88" />
 
----
+# Megam Weather (v2.1.1)
 
-## Key Features
+**The 100% On-Device, Privacy-First Dual-Unit Weather Companion (`°C` & `°F` Simultaneously)**
 
-### 1. Dual-Unit Temperature Visual Hierarchy
-- **Simultaneous Display**: Both Celsius (°C) and Fahrenheit (°F) are visible at all times across current conditions, hourly forecasts, and 7-day high/low predictions.
-- **Configurable Primary Unit**: Select whether °C or °F is emphasized as the primary unit in Settings. The primary unit is rendered prominently at 100% scale/opacity, while the secondary unit is displayed simultaneously beside it at 60% opacity.
+[![Version](https://img.shields.io/badge/version-2.1.1-0284c7?style=for-the-badge)](src/version.ts)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Capacitor 8](https://img.shields.io/badge/Capacitor-8_Android-119EFF?style=for-the-badge&logo=capacitor&logoColor=white)](https://capacitorjs.com/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-10b981?style=for-the-badge)](LICENSE)
 
-### 2. "Yesterday Comparison" Micro-Copy
-- A human-friendly relative summary comparing today's temperature and humidity against yesterday (e.g., *"4°C (7°F) cooler and less humid than yesterday"*), calculated on-device using historical meteorological data.
+*Built for global travelers, expats, outdoor athletes, and privacy-conscious users who think in both Metric and Imperial — delivering instant forecasts, 15-minute live radar nowcasting, UV & Air Quality health intelligence, and zero cloud tracking.*
 
-### 3. 60-Minute Rain Bar (Next-Hour Nowcasting)
-- A minimalist, ultra-lightweight bar chart displaying minute-by-minute precipitation forecasts for the next 60 minutes without the battery and data overhead of radar map tiles.
-- Features intuitive nowcast summaries (e.g., *"Light precipitation expected in ~15 minutes"* or *"Dry conditions expected for the next 60 minutes"*).
+[Key Features](#-key-features) • [App Screenshots](#-app-screenshots) • [Architecture](#-technical-architecture--stack) • [Quick Start](#-quick-start--development) • [Testing (TDD)](#-testing--quality-assurance-tdd) • [Android APK](#-building-the-native-android-apk) • [Deployment](#-deploying-to-vercel)
 
-### 4. Golden Hour & Blue Hour Calculator
-- Pure client-side astronomical calculation based on local solar coordinates, displaying exact morning and evening light windows for runners, walkers, and photographers at zero network cost:
-  - Morning Blue Hour
-  - Morning Golden Hour
-  - Evening Golden Hour
-  - Evening Blue Hour
-
-### 5. Custom "Activity Windows" (Run / Walk / Bike Indicator)
-- Set personalized outdoor comfort thresholds in Settings:
-  - Activity Type: Running, Walking, or Cycling
-  - Ideal temperature range (Min/Max °C or °F)
-  - Maximum acceptable wind speed (km/h)
-  - Maximum acceptable precipitation probability (%)
-- Highlights matching optimal hours directly on the hourly forecast slider with an indicator badge.
-
-### 6. Barometric Pressure Trend Arrow (↗ ↘ →)
-- Compares atmospheric pressure with 3 hours prior to indicate pressure movement:
-  - ↗ **Rising**: Clearing skies and fair weather ahead
-  - ↘ **Falling**: Potential storm or precipitation approaching
-  - → **Steady**: Stable atmospheric conditions
-
-### 7. Horizontal Swipeable Location Pager
-- Effortlessly switch between your auto-detected **Current GPS Location** and all your **Favorite Locations** via horizontal swipe gestures or by tapping the location indicator pills at the top.
-
-### 8. Instant Cache-First Launch & Staleness Tracking
-- **0ms Initial Render**: The app renders cached weather data immediately on startup so you never wait on an empty screen.
-- **Asynchronous Refresh**: Automatically queries a fresh GPS coordinate fix and weather update in the background.
-- **Staleness Badge**: Displays explicit last-updated metadata (e.g., *"Updated 12m ago"* or *"Offline Mode: Cached data"*).
-
-### 9. Pull-To-Refresh Gesture
-- Native-feeling touch drag-down gesture with spring resistance, release threshold, and rotating refresh indicator.
-
-### 10. Android Material You Home Screen Widgets
-- An interactive **Material You Widget Preview** modal (accessible via the widget icon in the top header) showing glanceable 4×2 and 2×2 widgets with side-by-side metric and imperial temperatures.
-
-### 11. Privacy & Zero-Tracking Guarantee
-- No user analytics, advertising SDKs, or third-party trackers.
-- Location coordinates are used solely for weather queries and processed entirely on-device.
+</div>
 
 ---
 
-## Technical Architecture & Stack
+## 📸 App Screenshots
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, Motion.
-- **Native Android Wrapper**: Capacitor 8 (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`).
-- **Weather APIs**:
-  - **Open-Meteo API**: Primary out-of-the-box provider with global coverage, no API key required, and Open Database License (ODbL) compliance.
-  - **OpenWeatherMap API**: Optional custom API key integration configurable in Settings.
-- **Offline Storage**: LocalStorage caching with location-keyed snapshots.
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/megam-dashboard.png" alt="Megam Weather Dual-Unit Dashboard" width="280" />
+      <br />
+      <sub><b>1. Dual-Unit Forecast Dashboard</b><br />Simultaneous °C & °F, Local Destination Clock, What-to-Wear Strip, and 60-Min Live Radar Nowcast</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/megam-share-modal.png" alt="Megam Weather Share Place & App Modal" width="280" />
+      <br />
+      <sub><b>2. Share Place Weather & App</b><br />Zero-tracking deep links (`?lat=...&lon=...`) & formatted dual-unit weather cards via native Web Share</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/megam-dark-settings.png" alt="Megam Weather Dark Mode & Activity Settings" width="280" />
+      <br />
+      <sub><b>3. Dark Mode & Activity Thresholds</b><br />Custom Run/Walk/Bike comfort rules, Neighborhood-Only GPS Privacy Shield, & Zero-Cloud Backup</sub>
+    </td>
+  </tr>
+</table>
+</div>
 
 ---
 
-## Project Structure
+## ✨ Key Features
 
+| Category | Feature | Description |
+| :--- | :--- | :--- |
+| **🌡️ Dual-Unit Core** | **Simultaneous `°C` & `°F` Hierarchy** | Displays both Celsius and Fahrenheit everywhere (Current Hero, Hourly Strip, 7-Day High/Lows, What-to-Wear, and Widgets). Choose your **Primary Unit** (`100%` scale/opacity) while keeping the secondary unit simultaneously visible (`60%` opacity). |
+| **🌧️ Hyperlocal Nowcast** | **Real 15-Min Radar Nowcasting** | Queries Open-Meteo `minutely_15` precipitation data and interpolates 5-minute intensity bars for the next 60 minutes, badged clearly as **`Live Radar Nowcast`** vs. **`Hourly Trend Estimate`**. |
+| **🧥 Smart Assistant** | **"What to Wear / Bring" Strip** | Deterministic on-device rule engine scanning the next 6 hours to surface up to 3 actionable chips: umbrella alerts with exact rain hour, jacket layering for temperature drops, UV protection (`UV ≥ 6`), and high-wind warnings. |
+| **🫁 Health & Safety** | **UV Index & Air Quality (`US AQI` / `PM2.5`)** | Parallel queries to Open-Meteo's Air Quality API display color-coded EPA AQI badges (`Good` to `Hazardous`), `PM2.5` concentration, and WHO UV Index categories — automatically filtering smoky (`AQI > 100`) or extreme-UV (`UV > 7`) hours from outdoor activity recommendations. |
+| **🏃 Outdoor Optimizer** | **Custom Activity Windows (Run / Walk / Bike)** | Interactive unit-aware thresholds (`°C`/`°F` min/max ideal temperatures, `km/h · mph` wind slider, and max rain probability slider) highlight optimal outdoor workout hours directly on the 24-hour timeline. |
+| **📅 Deep 7-Day View** | **Interactive 7-Day Hourly Expansion** | Tap any day row in the 7-Day Forecast to expand a full 24-hour horizontal forecast carousel (`192` hours total) with dual temperatures, weather icons, and rain probabilities for that specific day. |
+| **🕰️ World Clock** | **Destination Local Time Pill** | Displays each searched or favorite city's real local time (`Local time · 11:42 PM`) using IANA timezone resolution so you immediately know whether it is day or night at your destination. |
+| **🔗 Instant Sharing** | **Share Place Weather & Share App** | Share a formatted dual-unit weather snapshot with a zero-tracking deep link (`/?lat=...&lon=...&name=...`) or invite friends to Megam via the native OS share sheet (`navigator.share`) or one-tap clipboard copy. |
+| **🛡️ Privacy Shield** | **Neighborhood-Only GPS Fuzzing (`~1.1 km`)** | Truncates device GPS coordinates to 2 decimal places (`~1.1 km` neighborhood resolution) *on-device* before any network request leaves your phone, ensuring exact street addresses are never transmitted. |
+| **💾 Portability** | **Zero-Cloud Backup (Export / Import)** | Export and restore all favorite cities, custom activity rules, and app settings via a portable JSON or Base64 string without requiring user accounts or cloud databases. |
+| **📴 Honest Offline** | **Cache-First `0ms` Launch & Honest Offline State** | Renders cached forecasts instantaneously on launch and clearly distinguishes between cached offline data and uncached locations (*"No Offline Cache Available for [City]"*) with a one-tap retry. |
+| **📱 Native Android** | **Material You `4×2` & `2×2` Widgets** | Interactive preview of glanceable Android Material You home screen widgets alongside Capacitor 8 native packaging. |
+
+---
+
+## 🏗️ Technical Architecture & Stack
+
+```mermaid
+flowchart LR
+    subgraph Client["Megam Client (100% On-Device)"]
+        UI["React 19 + Tailwind CSS v4 UI"]
+        Engine["On-Device Engines\n• Dual-Unit Formatter\n• 6-Hr What-to-Wear Rules\n• Activity Window Filter\n• Golden/Blue Hour Math\n• GPS Privacy Fuzzing (~1.1km)"]
+        Cache[("LocalStorage Cache\nmegam_weather_*")]
+    end
+
+    subgraph APIs["Zero-Tracking Weather Feeds"]
+        OM["Open-Meteo Forecast API\n(Current, 192h Hourly, 15m Nowcast)"]
+        AQ["Open-Meteo Air Quality API\n(US AQI & PM2.5)"]
+        OWM["OpenWeatherMap API\n(Optional User Key)"]
+        Geo["Open-Meteo Geocoding &\nBigDataCloud Reverse Geocode"]
+    end
+
+    UI --> Engine
+    Engine <--> Cache
+    Engine --> OM
+    Engine --> AQ
+    Engine -.->|"Optional"| OWM
+    Engine --> Geo
 ```
-├── android/                         # Native Android Studio project
-│   ├── app/
-│   │   ├── src/main/
-│   │   │   ├── AndroidManifest.xml # Location & Internet permissions
-│   │   │   ├── java/               # Native Android MainActivity
-│   │   │   └── res/                # App icons, splash screens, strings
-│   │   └── build.gradle            # App-level Gradle build configuration
-│   ├── build.gradle                # Project-level Gradle build configuration
-│   └── gradlew                     # Gradle wrapper script
+
+- **Frontend Framework**: React 19, TypeScript 5.8, Vite 8
+- **Styling & Icons**: Tailwind CSS v4 (`@tailwindcss/vite`), Lucide React Icons, Motion
+- **Native Mobile Runtime**: Capacitor 8 (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`)
+- **Testing Stack**: Vitest 4 + React Testing Library (Unit & Integration) + Playwright (End-to-End Chromium Browser Suite)
+- **Detailed Documentation**:
+  - [Functional Documentation (`docs/FUNCTIONAL_DOCUMENTATION.md`)](docs/FUNCTIONAL_DOCUMENTATION.md)
+  - [Architecture Documentation (`docs/ARCHITECTURE_DOCUMENTATION.md`)](docs/ARCHITECTURE_DOCUMENTATION.md)
+
+---
+
+## 📂 Project Structure
+
+```text
+├── android/                           # Native Android Studio project (Capacitor 8)
+│   ├── app/src/main/                  # AndroidManifest.xml, MainActivity, resources
+│   └── build.gradle                   # Gradle build configuration
+├── docs/
+│   ├── screenshots/                   # Live application screenshots used in README
+│   ├── ARCHITECTURE_DOCUMENTATION.md  # System design, data flows & caching architecture
+│   └── FUNCTIONAL_DOCUMENTATION.md    # Functional specs & user journeys
+├── e2e/
+│   └── megam.spec.ts                  # Playwright End-to-End (E2E) browser test suite
 ├── public/
-│   ├── icon.svg                    # Vector brand icon
-│   └── manifest.json               # Web App Manifest for PWA installation
+│   ├── icon.svg                       # Vector brand icon
+│   └── manifest.json                  # Web App Manifest for PWA installation
 ├── src/
 │   ├── components/
-│   │   ├── CurrentWeatherHero.tsx  # Dual-unit hero with primary/secondary hierarchy
-│   │   ├── DailyForecast.tsx       # 7-day forecast with dual high/lows
-│   │   ├── FavoritesDrawer.tsx     # Favorite cities manager
-│   │   ├── GoldenHourCard.tsx      # Astronomical golden/blue hour light windows
-│   │   ├── HourlyForecast.tsx      # 24-hour carousel with activity window highlights
-│   │   ├── LocationPagerIndicator.tsx # Horizontal swipe pager indicator
-│   │   ├── MobileFrame.tsx         # Realistic mobile device preview on desktop
-│   │   ├── NextHourRainBar.tsx     # 60-minute nowcasting precipitation bar chart
-│   │   ├── PullToRefresh.tsx       # Touch pull-to-refresh container
-│   │   ├── QuickMetricsGrid.tsx    # Humidity, wind, sunrise/sunset, pressure trend
-│   │   ├── SearchModal.tsx         # Global geocoding search & GPS trigger
-│   │   ├── SettingsModal.tsx       # Primary unit, activity thresholds, theme, API key
-│   │   ├── SevereAlertBanner.tsx   # Active weather warning banners
-│   │   ├── WeatherHeader.tsx       # Top app bar with staleness timestamp
-│   │   ├── WeatherIcons.tsx        # Weather condition icon mapping
-│   │   └── WidgetPreviewModal.tsx  # Material You 4x2 and 2x2 widget simulator
+│   │   ├── CurrentWeatherHero.tsx     # Dual-unit hero, local time pill, favorite & share triggers
+│   │   ├── WhatToWearStrip.tsx        # 6-hour contextual clothing & umbrella recommendation strip
+│   │   ├── NextHourRainBar.tsx        # 60-minute live radar nowcasting bar chart
+│   │   ├── QuickMetricsGrid.tsx       # Humidity, dual wind, sunrise/sunset, pressure, UV & AQI
+│   │   ├── HourlyForecast.tsx         # 24-hour carousel with optimal activity window badges
+│   │   ├── GoldenHourCard.tsx         # Astronomical Golden Hour & Blue Hour calculator card
+│   │   ├── DailyForecast.tsx          # Interactive 7-day forecast with expandable 24h rows
+│   │   ├── ShareModal.tsx             # Unified Place Weather & App Invite share modal
+│   │   ├── SettingsModal.tsx          # Units, activity sliders, privacy shield & zero-cloud backup
+│   │   ├── SearchModal.tsx            # Global city search & GPS auto-detection modal
+│   │   ├── FavoritesDrawer.tsx        # Saved favorite cities drawer
+│   │   ├── WidgetPreviewModal.tsx     # Material You 4×2 and 2×2 widget simulator
+│   │   ├── SevereAlertBanner.tsx      # Expandable severe weather alert banner
+│   │   ├── LocationPagerIndicator.tsx # Horizontal swipe location pager pills
+│   │   ├── WeatherHeader.tsx          # Sticky top bar with staleness & quick actions
+│   │   └── MobileFrame.tsx            # Responsive mobile device frame & desktop viewport toggle
 │   ├── hooks/
-│   │   ├── useOnlineStatus.ts      # Real-time network connectivity tracker
-│   │   └── usePWAInstall.ts        # PWA beforeinstallprompt & iOS guidance
+│   │   ├── useOnlineStatus.ts         # Real-time browser online/offline state hook
+│   │   └── usePWAInstall.ts           # PWA installation prompt & iOS Safari guide hook
 │   ├── services/
-│   │   └── weatherService.ts       # Open-Meteo, OWM, geocoding, and astronomical math
+│   │   └── weatherService.ts          # API clients, nowcast interpolation, share links & cache
+│   ├── test/
+│   │   ├── unit/                      # Vitest unit tests (services, hooks, UI components)
+│   │   └── integration/               # Full-app integration tests
 │   ├── types/
-│   │   └── weather.ts              # TypeScript interfaces and data models
-│   ├── App.tsx                     # Main application container
-│   ├── index.css                   # Global styles and font definitions
-│   ├── main.tsx                    # React DOM entry point
-│   └── version.ts                  # App version & build number tracker
-├── .npmrc                          # npm configuration (legacy-peer-deps for Vercel builds)
-├── capacitor.config.ts             # Capacitor Android configuration
-├── index.html                      # HTML entry with mobile viewport tags
-├── package.json                    # Dependencies and build scripts
-├── vercel.json                     # Vercel deployment & SPA routing configuration
-└── vite.config.ts                  # Vite build configuration
+│   │   └── weather.ts                 # Strict TypeScript domain interfaces
+│   ├── App.tsx                        # Root application state & swipe pager orchestrator
+│   └── version.ts                     # Semantic version & build timestamp tracker
+├── capacitor.config.ts                # Capacitor native runtime configuration
+├── playwright.config.ts               # Playwright E2E test runner configuration
+├── vercel.json                        # Vercel SPA routing & PWA headers configuration
+└── vitest.config.ts                   # Vitest unit & integration test configuration
 ```
 
 ---
 
-## Development & Usage
+## 🚀 Quick Start & Development
 
-### 1. Web Development (Chrome / Browser / PWA)
-Run the local development server:
+### Prerequisites
+- **Node.js** `v20+` and **npm** `v10+`
+
+### 1. Install Dependencies
+```bash
+npm install --legacy-peer-deps
+```
+
+### 2. Start Local Development Server
 ```bash
 npm run dev
 ```
-Open `http://localhost:3000` in Google Chrome or any modern browser.
+Open **`http://localhost:3000`** in your browser. You can also test deep-linked city forecasts directly via URL query parameters:
+```text
+http://localhost:3000/?lat=35.6762&lon=139.6503&name=Tokyo&country=Japan
+```
 
-### 2. Build for Production Web
+### 3. Production Build & Typecheck
 ```bash
+npm run lint
 npm run build
 ```
 
-### 3. Lint & Typecheck
-```bash
-npm run lint
-```
+---
 
-### 4. Version Management & Code Commits
-The currently running application version is managed in `src/version.ts`:
-```typescript
-export const APP_VERSION = '2.0.1';
-export const APP_BUILD = '2026.10.16.1';
-```
+## 🧪 Testing & Quality Assurance (TDD)
 
-With each code commit or feature release:
-1. Increment `APP_VERSION` (e.g. `2.0.1` -> `2.0.2`) and update `APP_BUILD` in `src/version.ts`.
-2. Update `"version"` in `package.json`.
-3. If deploying an Android update, increment `versionCode` and update `versionName` in `android/app/build.gradle`.
-4. Run `npm run android:sync` to propagate the new version into the native Android platform.
+Megam Weather is engineered using strict **Test-Driven Development (TDD)** across three verification layers:
 
-The running version badge is rendered live at the bottom of the main screen and inside the **Settings** modal.
+| Test Suite | Command | Scope |
+| :--- | :--- | :--- |
+| **Unit Tests** | `npm run test:unit` | Pure unit conversion math, coordinate privacy fuzzing, 15-min precipitation interpolation, astronomical calculators, share URL builders, custom hooks, and isolated React components. |
+| **Integration Tests** | `npm run test:integration` | Full `<App />` rendering with mocked network payloads, location switching, favorites persistence, deep-link URL parsing, and honest offline state handling. |
+| **Playwright E2E Suite** | `npm run test:e2e` | Real headless Chromium browser verification of all user flows: dual-unit dashboard, interactive 7-day expansion, settings sliders, city search, Material You widgets, offline retry, and native/clipboard sharing. |
+| **Full Verification** | `npm run test:all` | Runs all **43 Vitest unit/integration tests** followed by all **6 Playwright E2E scenarios**. |
 
 ---
 
-## Building the Native Android APK
+## 📱 Building the Native Android APK
 
-The project is already pre-configured with a complete native Android project in the `/android` directory.
+The repository includes a pre-configured **Capacitor 8** Android project in `/android`.
 
 ### Step 1: Synchronize Web Assets to Android
-Whenever you update code in `src/`, sync the changes into the Android project:
+Whenever you update code in `src/`, build and sync the production bundle into the Android project:
 ```bash
 npm run android:sync
 ```
-*(This automatically runs `npm run build` and copies production assets into `android/app/src/main/assets/public`)*.
 
 ### Step 2: Open in Android Studio
-Open the project in Android Studio:
 ```bash
 npm run android:open
 ```
-*Or manually:*
-1. Launch **Android Studio**.
-2. Select **Open an existing project**.
-3. Choose the `/android` folder in this repository.
 
-### Step 3: Build APK or AAB
-In Android Studio:
-1. Wait for Gradle sync to complete.
-2. Select **Build** > **Build Bundle(s) / APK(s)** > **Build APK(s)**.
-3. Once built, click **locate** to retrieve your compiled `app-debug.apk` file to install on any Android smartphone.
-4. For Google Play Store submission, choose **Build** > **Generate Signed Bundle / APK** to create an `.aab` (Android App Bundle).
+### Step 3: Build APK or Signed App Bundle (`.aab`)
+1. Wait for Android Studio Gradle sync to finish.
+2. For direct device testing: **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+3. For Google Play Store release: **Build > Generate Signed Bundle / APK > Android App Bundle (`.aab`)**.
 
 ---
 
-## Deploying to Vercel
+## ☁️ Deploying to Vercel
 
-The application is pre-configured for zero-configuration, one-click deployment on **Vercel** via the included `vercel.json` file.
+Megam Weather is pre-configured for zero-configuration deployment on **Vercel** via [`vercel.json`](vercel.json) and [`.npmrc`](.npmrc):
 
-### Option A: Deploy via Git Integration (Recommended)
 1. Push your repository to **GitHub**, **GitLab**, or **Bitbucket**.
-2. Go to [vercel.com/new](https://vercel.com/new) and log in.
-3. Import your Megam Weather repository.
-4. Vercel automatically detects the project settings:
+2. Import the project at [vercel.com/new](https://vercel.com/new).
+3. Vercel automatically applies:
    - **Framework Preset**: `Vite`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
-   - **Install Command**: `npm install --legacy-peer-deps` *(pre-configured via `.npmrc` and `vercel.json`)*
-5. Click **Deploy**. Your app will build and go live with full HTTPS, edge caching, and global CDN delivery in seconds.
-
-### Option B: Deploy via Vercel CLI
-If you prefer deploying directly from your terminal:
-```bash
-# 1. Install Vercel CLI globally (if not already installed)
-npm install -g vercel
-
-# 2. Deploy preview build
-vercel
-
-# 3. Deploy to production
-vercel --prod
-```
-
-### Dependency Resolution Fix (`--legacy-peer-deps`)
-Modern npm uses strict peer-dependency validation by default, which can cause an `ERESOLVE` conflict when packaging newer Vite and Tailwind versions alongside Capacitor. This project includes two automatic safeguards so you never see this error on Vercel:
-1. **`.npmrc`**: Contains `legacy-peer-deps=true` so all Vercel build runners resolve peer dependencies cleanly.
-2. **`vercel.json`**: Explicitly defines `"installCommand": "npm install --legacy-peer-deps"` to override default strict install behavior.
-3. If you manually configure the project in the Vercel Dashboard, ensure **Settings > General > Install Command** is set to `npm install --legacy-peer-deps` (or left to default, which reads `.npmrc`).
-
-### Pre-Configured `vercel.json` Features
-The repository includes a root `vercel.json` file that handles:
-- **Install Command**: `npm install --legacy-peer-deps` for zero-friction builds.
-- **SPA Rewrites**: Redirects all inbound routes (`/(.*)`) to `/index.html` so client-side state, modal paths, and deep links load seamlessly without 404 errors.
-- **PWA Asset Headers**: Sets `Content-Type: application/manifest+json` on `/manifest.json` and configures immutable HTTP cache-control headers on `/icon.svg` for optimal Lighthouse PWA scores.
-- **Environment Variables**: If you use any optional server-side keys (like `GEMINI_API_KEY`), add them in your Vercel Project Settings under **Settings > Environment Variables**.
+   - **Install Command**: `npm install --legacy-peer-deps`
+4. Click **Deploy** — SPA deep-link rewrites (`/?lat=...&lon=...`) and PWA manifest headers work out of the box.
 
 ---
 
-## Publishing to Google Play Store
+## 📄 License
 
-Follow this step-by-step guide to package, sign, and publish Megam Weather to the **Google Play Store**.
-
-### Prerequisites
-1. A **Google Play Developer Account** (register at [play.google.com/console](https://play.google.com/console) with a one-time $25 fee).
-2. **Android Studio** installed on your workstation.
-
----
-
-### Step 1: Sync the Latest Web Build
-Before building the native bundle, always compile your web assets and sync them to the Android project:
-```bash
-npm run android:sync
-```
-
----
-
-### Step 2: Configure Versioning
-Open `android/app/build.gradle` and ensure your release version codes are set:
-```groovy
-defaultConfig {
-    applicationId "com.megam.weather"
-    minSdkVersion 24
-    targetSdkVersion 36
-    versionCode 1          // Increment with every update (1, 2, 3...)
-    versionName "2.0.0"    // User-visible version string
-}
-```
-
----
-
-### Step 3: Generate a Production Signing Keystore (`.jks`)
-Google Play requires all release builds to be cryptographically signed. You can generate an upload keystore via the terminal or Android Studio:
-
-**Option A: Via Terminal (Mac/Linux/Windows WSL)**
-```bash
-keytool -genkey -v -keystore megam-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias megam-key
-```
-*(Store `megam-release-key.jks` in a secure location outside your git repository. It is already excluded in `.gitignore`)*.
-
-**Option B: Via Android Studio UI**
-1. In Android Studio, go to **Build** > **Generate Signed Bundle / APK**.
-2. Select **Android App Bundle** and click **Next**.
-3. Under *Key store path*, click **Create new...** and fill in your password and developer certificate details.
-
----
-
-### Step 4: Build the Signed Android App Bundle (`.aab`)
-Google Play requires the **AAB (Android App Bundle)** format rather than a standard APK for production uploads:
-
-1. In Android Studio, go to **Build** > **Generate Signed Bundle / APK...**
-2. Choose **Android App Bundle**, click **Next**.
-3. Select your keystore (`megam-release-key.jks`), enter your passwords, and click **Next**.
-4. Choose **release** as the build variant and click **Create**.
-5. Once complete, Android Studio will output:
-   `android/app/release/app-release.aab`
-
-*(Or from terminal: `cd android && ./gradlew bundleRelease`)*
-
----
-
-### Step 5: Prepare Store Listing Assets
-Prepare the following graphic assets for your Google Play Console store listing:
-- **App Title**: `Megam Weather` (≤ 30 characters).
-- **Short Description**: `Fast, lightweight weather with simultaneous metric and imperial temperatures.` (≤ 80 characters).
-- **Full Description**: Detailed overview of dual-unit forecasts, 60-min nowcasting, golden hour calculator, and offline caching.
-- **App Icon**: 512 × 512 px PNG (32-bit with alpha, max 1MB).
-- **Feature Graphic**: 1024 × 500 px JPEG or 24-bit PNG.
-- **Phone Screenshots**: Minimum 2 screenshots (16:9 or 9:16 aspect ratio, min 320px, max 3840px).
-
----
-
-### Step 6: Google Play Console Policies & Declarations
-
-When setting up your app in the **Google Play Console**, fill out the required policy questionnaires as follows:
-
-1. **Privacy Policy**:
-   - Provide a public URL to your Privacy Policy (e.g., `https://your-app.vercel.app/privacy` or a GitHub Pages URL).
-   - Required because the app requests location permissions (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`).
-
-2. **Data Safety Section**:
-   - **Location Data Collected**: Yes (Approximate location & Precise location).
-   - **Data Sharing**: No — location data is **not** shared with third parties.
-   - **Data Processing**: Ephemeral (used on-device strictly to query weather stations and not stored on external servers).
-   - **Tracking / Ads**: Not used for advertising, tracking, or marketing.
-
-3. **Location Permissions Declaration**:
-   - State clearly: *"Location permissions are requested strictly while the app is in use to fetch local weather forecasts, hourly projections, and severe storm warnings for the user's current city."*
-
-4. **App Content & Rating**:
-   - Complete the IARC rating questionnaire (select News/Weather/Informational — rating is typically **Everyone / PEGI 3**).
-   - Ads: Select **"No, my app does not contain ads"**.
-
----
-
-### Step 7: Upload Release & Launch
-1. In Google Play Console, go to **Testing > Internal testing** (or **Production**).
-2. Click **Create new release**.
-3. Upload your `app-release.aab` bundle.
-4. Add release notes (e.g., *"Initial release of Megam Weather v2.0 with dual-unit temperature hierarchy, 60-minute rain nowcasting, and golden hour windows"*).
-5. Click **Next**, review the pre-launch report, and submit for rollout!
-
----
-
-## License
-Apache-2.0
-
-
+Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for full details.
