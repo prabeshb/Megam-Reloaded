@@ -1,5 +1,5 @@
 {
-  "name": "Megan Weather",
+  "name": "Megam Weather",
   "description": "Fast, lightweight mobile-first weather application delivering quick forecasts with simultaneous metric and imperial temperatures, offline caching, and location search.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

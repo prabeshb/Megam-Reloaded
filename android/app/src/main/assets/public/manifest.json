@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Megan Weather",
-  "short_name": "Megan",
+  "name": "Megam Weather",
+  "short_name": "Megam",
   "description": "Fast, lightweight mobile-first weather application delivering quick forecasts with simultaneous metric and imperial temperatures.",
   "start_url": "/",
   "scope": "/",

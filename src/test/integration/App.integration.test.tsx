@@ -101,7 +101,7 @@ describe('Megam Weather App - Integration Tests', () => {
 
     // Switch Primary Unit to Fahrenheit (°F)
     fireEvent.click(screen.getByText('Fahrenheit (°F) Primary'));
-    expect(JSON.parse(localStorage.getItem('megan_weather_settings') || '{}').primaryUnit).toBe('F');
+    expect(JSON.parse(localStorage.getItem('megam_weather_settings') || '{}').primaryUnit).toBe('F');
 
     // Switch Theme to Dark Mode
     fireEvent.click(screen.getByText('Dark'));

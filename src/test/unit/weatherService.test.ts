@@ -188,7 +188,7 @@ describe('weatherService - Unit Tests', () => {
   describe('LocalStorage Persistence (Cache, Favorites, Settings)', () => {
     it('saves and retrieves location-keyed weather cache and last location', () => {
       const key = getCacheKey(35.6762, 139.6503);
-      expect(key).toBe('megan_weather_cache_35.68_139.65');
+      expect(key).toBe('megam_weather_cache_35.68_139.65');
 
       const sampleData: WeatherData = {
         location: MOCK_LOCATION,

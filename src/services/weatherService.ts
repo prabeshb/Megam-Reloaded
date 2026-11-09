@@ -260,10 +260,10 @@ export function calculateNextHourRain(
   };
 }
 
-const CACHE_PREFIX = 'megan_weather_cache_';
-const LAST_LOCATION_KEY = 'megan_weather_last_loc';
-const FAVORITES_KEY = 'megan_weather_favorites';
-const SETTINGS_KEY = 'megan_weather_settings';
+const CACHE_PREFIX = 'megam_weather_cache_';
+const LAST_LOCATION_KEY = 'megam_weather_last_loc';
+const FAVORITES_KEY = 'megam_weather_favorites';
+const SETTINGS_KEY = 'megam_weather_settings';
 
 export function getCacheKey(lat: number, lon: number): string {
   return `${CACHE_PREFIX}${lat.toFixed(2)}_${lon.toFixed(2)}`;
