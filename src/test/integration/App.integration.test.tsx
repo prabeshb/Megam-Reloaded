@@ -103,9 +103,18 @@ describe('Megam Weather App - Integration Tests', () => {
     fireEvent.click(screen.getByText('Fahrenheit (°F) Primary'));
     expect(JSON.parse(localStorage.getItem('megam_weather_settings') || '{}').primaryUnit).toBe('F');
 
-    // Switch Theme to Dark Mode
+    // Switch Theme to Dark Mode and back to Light Mode
     fireEvent.click(screen.getByText('Dark'));
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+
+    fireEvent.click(screen.getByText('Light'));
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(document.documentElement.style.colorScheme).toBe('light');
+
+    fireEvent.click(screen.getByText('Dark'));
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.style.colorScheme).toBe('dark');
 
     // Switch Activity Type to Walking
     fireEvent.click(screen.getByText(/Walking/));
