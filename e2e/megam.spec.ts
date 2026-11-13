@@ -154,7 +154,7 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     await page.getByLabel('Expand Today hourly forecast').click();
     await expect(page.getByTestId('daily-hourly-strip-2026-10-16')).toBeVisible();
     await expect(page).toHaveTitle('Megam Weather');
-    await expect(page.getByText('v2.1.1')).toBeVisible();
+    await expect(page.getByText('v2.1.2')).toBeVisible();
   });
 
   test('E2E 2: Configures Settings (Fahrenheit primary unit, Dark mode, Activity thresholds)', async ({
@@ -184,9 +184,16 @@ test.describe('Megam Weather v2.0 - End-to-End (E2E) Suite', () => {
     // Select Cycling Activity Window
     await page.getByText(/Cycling/).click();
 
-    // Switch to Dark Theme
-    await page.getByRole('button', { name: 'Dark' }).click();
+    // Switch to Light Theme and verify computed background color is light
+    await page.getByRole('button', { name: 'Light', exact: true }).click();
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    const settingsPanel = page.locator('.dark\\:bg-slate-900').first();
+    await expect(settingsPanel).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+
+    // Switch to Dark Theme and verify computed background color changes cleanly
+    await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(settingsPanel).not.toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await page.screenshot({ path: 'docs/screenshots/megam-dark-settings.png' });
 
     // Verify Neighborhood-Only GPS Coordinate Privacy Fuzzing toggle is present and active

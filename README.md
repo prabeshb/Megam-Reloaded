@@ -2,11 +2,11 @@
 
 <img src="public/icon.svg" alt="Megam Weather Logo" width="88" height="88" />
 
-# Megam Weather (v2.1.1)
+# Megam Weather (v2.1.2)
 
 **The 100% On-Device, Privacy-First Dual-Unit Weather Companion (`°C` & `°F` Simultaneously)**
 
-[![Version](https://img.shields.io/badge/version-2.1.1-0284c7?style=for-the-badge)](src/version.ts)
+[![Version](https://img.shields.io/badge/version-2.1.2-0284c7?style=for-the-badge)](src/version.ts)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
